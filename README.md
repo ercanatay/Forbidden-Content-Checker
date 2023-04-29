@@ -18,6 +18,11 @@ Wordpress tabanlı web sitelerde eğer "casino" kelimesi içeren blog yazısı v
 - Casino maksimum 3 tane içerik listeler.
 - Ek anahtar kelime maksimum 2 tane içerik listeler.
 
+Kodlayıcı:
+
+Ercan ATAY
+https://www.ercanatay.com
+
 English:
 
 Project: Forbidden Content Checker 1.0
@@ -34,3 +39,8 @@ On Wordpress-based websites, if there is a blog post containing the word "casino
 - If the site search is closed to the classic query, it gives an "Unable to fetch data" error.
 - The casino lists a maximum of 3 items.
 - Additional keyword lists maximum of two content.
+
+Coder:
+
+Ercan ATAY
+https://www.ercanatay.com
