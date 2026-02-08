@@ -38,7 +38,7 @@ final class ScanController extends ApiController
                 $this->app->translator()->t('error.scan_create_failed', $locale),
                 $locale,
                 Utils::traceId(),
-                ['reason' => $e->getMessage()],
+                ['reason' => $this->safeErrorMessage($e, 'scan.create')],
                 422
             );
         }
@@ -105,7 +105,7 @@ final class ScanController extends ApiController
                 $this->app->translator()->t('error.diff_failed', $locale),
                 $locale,
                 Utils::traceId(),
-                ['reason' => $e->getMessage()],
+                ['reason' => $this->safeErrorMessage($e, 'scan.diff')],
                 422
             );
         }
