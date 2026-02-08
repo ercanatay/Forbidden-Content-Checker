@@ -411,8 +411,13 @@ final class Scanner
         $lastResponse = null;
 
         while ($attempts <= $this->maxRetries) {
-            $response = $this->fetchOnce($url);
+            // Replaced fetchOnce with fetchWithRedirects to handle redirects manually and securely
+            $response = $this->fetchWithRedirects($url);
             if ($response['success']) {
+                // If we get a 5xx error, it's not "success" in terms of fetch, but fetchWithRedirects returns success=true for HTTP responses.
+                // fetchRaw sets success=false only for HTTP 500+ or network errors.
+                // Wait, fetchRaw logic: $success = $status > 0 && $status < 500;
+                // So if status is 503, success is false. So we retry.
                 return $response;
             }
 
@@ -439,7 +444,70 @@ final class Scanner
     /**
      * @return array<string, mixed>
      */
-    private function fetchOnce(string $url): array
+    private function fetchWithRedirects(string $url): array
+    {
+        $currentUrl = $url;
+        $redirects = 0;
+        $maxRedirects = 5;
+
+        while ($redirects <= $maxRedirects) {
+            $response = $this->fetchRaw($currentUrl);
+
+            // If network error, return immediately (let fetchWithRetry handle retry)
+            if (!$response['success'] && empty($response['status_code'])) {
+                 return $response;
+            }
+
+            $status = (int) ($response['status_code'] ?? 0);
+
+            // Handle redirects
+            if ($status >= 300 && $status < 400) {
+                $headers = (string) ($response['headers'] ?? '');
+                if (preg_match('/^Location:\s*(.*)$/im', $headers, $matches)) {
+                    $location = trim($matches[1]);
+                    if ($location !== '') {
+                        $nextUrl = $this->urlNormalizer->resolveUrl($currentUrl, $location);
+                        if ($nextUrl !== null) {
+                            try {
+                                // Validate the new URL against SSRF policy
+                                $this->ssrfGuard->validateAndResolve($nextUrl);
+                                $currentUrl = $nextUrl;
+                                $redirects++;
+                                continue;
+                            } catch (\Throwable $e) {
+                                return [
+                                    'success' => false,
+                                    'status_code' => 0,
+                                    'content_type' => null,
+                                    'body' => '',
+                                    'error' => 'SSRF_BLOCK_REDIRECT: ' . $e->getMessage(),
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Not a redirect or max redirects reached (actually max redirects logic is implicitly handled by loop condition)
+            // Wait, if loop finishes, we return the last response.
+            // But if we are redirecting, we 'continue'.
+            // So if we break here, it means we are done.
+            return $response;
+        }
+
+        return [
+            'success' => false,
+            'status_code' => 0,
+            'content_type' => null,
+            'body' => '',
+            'error' => 'Too many redirects.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fetchRaw(string $url): array
     {
         try {
             $resolved = $this->ssrfGuard->validateAndResolve($url);
@@ -449,6 +517,7 @@ final class Scanner
                 'status_code' => 0,
                 'content_type' => null,
                 'body' => '',
+                'headers' => '',
                 'error' => 'SSRF_BLOCK: ' . $e->getMessage(),
             ];
         }
@@ -457,8 +526,7 @@ final class Scanner
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
+            CURLOPT_FOLLOWLOCATION => false, // SECURITY: Disable auto-follow to prevent SSRF bypass
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => min(8, $this->timeout),
             CURLOPT_USERAGENT => 'ForbiddenContentChecker/3.0',
@@ -484,10 +552,12 @@ final class Scanner
                 'status_code' => $status,
                 'content_type' => $contentType,
                 'body' => '',
+                'headers' => '',
                 'error' => 'CURL_' . $errno . ': ' . $error,
             ];
         }
 
+        $headers = substr($raw, 0, $headerSize);
         $body = substr($raw, $headerSize);
         $success = $status > 0 && $status < 500;
 
@@ -497,6 +567,7 @@ final class Scanner
                 'status_code' => $status,
                 'content_type' => $contentType,
                 'body' => $body,
+                'headers' => $headers,
                 'error' => 'HTTP_' . $status,
             ];
         }
@@ -506,6 +577,7 @@ final class Scanner
             'status_code' => $status,
             'content_type' => $contentType,
             'body' => $body,
+            'headers' => $headers,
             'error' => null,
         ];
     }
