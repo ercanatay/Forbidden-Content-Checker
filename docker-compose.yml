@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    container_name: forbidden-content-checker
+    ports:
+      - "8080:80"
+    environment:
+      FCC_APP_ENV: production
+      FCC_APP_DEBUG: "0"
+      FCC_APP_SECRET: "change-me"
+      FCC_DEFAULT_LOCALE: en-US
+      FCC_DB_PATH: /var/www/html/storage/checker.sqlite
+      FCC_LOG_FILE: /var/www/html/storage/logs/app.log
+      FCC_ADMIN_EMAIL: admin@example.com
+      FCC_ADMIN_PASSWORD: admin123!ChangeNow
+    volumes:
+      - ./storage:/var/www/html/storage

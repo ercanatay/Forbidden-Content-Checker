@@ -1,137 +1,352 @@
-# Advanced Forbidden Content Checker v2.0
+# Forbidden Content Checker v3
 
-[![PHP Version](https://img.shields.io/badge/PHP-%3E%3D%208.1-8892BF?style=flat-square)](https://www.php.net/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+A modular, secure, multilingual forbidden-content scanning platform for WordPress-first and generic website checks.
 
-A standalone PHP application to check WordPress websites for specific keywords (like "casino") within their search results, featuring a modern UI, concurrent checks, and CSV export.
+- Runtime: PHP 8.2+
+- UI + REST API: `/public/index.php` + `/api/v1/*`
+- Storage: SQLite (`storage/checker.sqlite` by default)
+- Auth: session login + API tokens + role-based permissions
+- Languages: 10 locales including Turkish and Arabic (RTL)
 
----
+## Feature Matrix (36 Professional Features)
 
-## English Description
+| # | Feature | Status |
+|---|---|---|
+| 1 | Role-based access control (`admin`, `analyst`, `viewer`) | Implemented |
+| 2 | Secure login/logout with Argon2id hashing | Implemented |
+| 3 | Optional TOTP MFA for admin users | Implemented |
+| 4 | CSRF protection for state-changing requests | Implemented |
+| 5 | Secure session cookie policy (`HttpOnly`, `Secure`, `SameSite=Lax`) | Implemented |
+| 6 | API token management with scopes | Implemented |
+| 7 | Full audit trail for auth and config actions | Implemented |
+| 8 | Scan history with immutable run records | Implemented |
+| 9 | Domain allowlist and denylist governance | Implemented |
+| 10 | SSRF hardening with private/reserved IP block and DNS pinning | Implemented |
+| 11 | Global and per-user/IP rate limiting | Implemented |
+| 12 | Retry policy with exponential backoff and jitter | Implemented |
+| 13 | Per-domain circuit breaker | Implemented |
+| 14 | SQLite-backed queue for background scans | Implemented |
+| 15 | Worker process with configurable concurrency behavior | Implemented |
+| 16 | Resumable scans after restart (stale job recovery) | Implemented |
+| 17 | Scan profiles | Implemented |
+| 18 | Keyword sets with include/exclude groups | Implemented |
+| 19 | Exact-match and regex keyword modes | Implemented |
+| 20 | WordPress-first detection (`/?s=`, `wp-json/wp/v2/search`) | Implemented |
+| 21 | Generic HTML fallback scanning | Implemented |
+| 22 | Pagination traversal (depth-capped) | Implemented |
+| 23 | Canonical URL normalization and dedupe | Implemented |
+| 24 | Content-type validation before parsing | Implemented |
+| 25 | Severity scoring per finding | Implemented |
+| 26 | False-positive suppression rules | Implemented |
+| 27 | Baseline comparison and diff reports | Implemented |
+| 28 | Trend analytics by day/week/month | Implemented |
+| 29 | CSV export with UTF-8 BOM | Implemented |
+| 30 | JSON export with metadata | Implemented |
+| 31 | XLSX export | Implemented |
+| 32 | Signed PDF summary report (HMAC signature) | Implemented |
+| 33 | Webhook notifications | Implemented |
+| 34 | Email completion digest notifications | Implemented |
+| 35 | Health, readiness, and metrics endpoints | Implemented |
+| 36 | Full i18n for UI + API errors in 10 languages | Implemented |
 
-### Overview
+## Repository Layout
 
-The **Advanced Forbidden Content Checker** is a single-file PHP web application designed to help users scan a list of WordPress websites. It checks if the sites' internal search results contain posts mentioning the keyword "casino" or any other user-defined keywords. This tool is particularly useful for monitoring website content for specific terms quickly and efficiently.
+```text
+public/
+  index.php
+  forbidden_checker.php         # deprecated compatibility shim
+  assets/
+    app.css
+    app.js
+src/
+  App.php
+  Config.php
+  bootstrap.php
+  Http/
+    Router.php
+    Request.php
+    Response.php
+    Controllers/
+  Domain/
+    Auth/
+    I18n/
+    Scan/
+    Analytics/
+  Infrastructure/
+    Db/
+    Queue/
+    Security/
+    Export/
+    Notification/
+    Observability/
+database/
+  schema.sql
+locales/
+  en-US.json tr-TR.json es-ES.json fr-FR.json de-DE.json
+  it-IT.json pt-BR.json nl-NL.json ar-SA.json ru-RU.json
+bin/
+  worker.php
+tests/
+  run.php
+```
 
-This version (v2.0) is a significant upgrade from the original v1.0, rebuilt from the ground up with modern technologies and enhanced features.
+## Requirements
 
-### Key Features (v2.0)
+- PHP 8.2+ with extensions:
+  - `curl`
+  - `dom`
+  - `mbstring`
+  - `openssl`
+  - `pdo_sqlite`
+  - `zip` (recommended for native XLSX generation)
+- Web server (Apache/Nginx) or PHP built-in server
 
-* **Single File Application:** Combines backend (PHP) and frontend (HTML/CSS/JS) into one manageable file.
-* **Modern User Interface:** Uses the [UIkit 3](https://getuikit.com/) framework for a clean, responsive, and user-friendly interface.
-* **Multiple Keyword Support:** Checks for the default keyword "casino" and allows users to input multiple additional keywords (comma-separated).
-* **Concurrent Checks:** Processes the list of domains/URLs concurrently (up to a configurable limit) using asynchronous JavaScript requests, significantly speeding up checks for large lists compared to v1.0's sequential approach.
-* **Configurable Result Limits:** Limits the number of results shown per keyword ("casino" and each additional keyword) via constants in the PHP code.
-* **Keyword Highlighting:** Found keywords are highlighted within the result titles in the output table for easy identification.
-* **CSV Export:** Allows users to export the results table to a CSV file for offline analysis or record-keeping.
-* **Enhanced Error Handling:** Provides clearer feedback on fetch errors (cURL errors, HTTP status codes).
-* **Improved URL Parsing:** More robust handling of different URL formats and relative link resolution.
-* **PHP 8.1+ Compatibility:** Utilizes modern PHP features and requires PHP version 8.1 or higher.
-* **Fully English Interface:** All UI elements are presented in English for broader accessibility.
+## Quick Start
 
-### How it Works
+### Option A: Local PHP Built-in Server
 
-1.  **Input:** The user provides a list of domain names or full URLs (one per line) and optionally adds comma-separated keywords.
-2.  **Backend Processing (PHP):**
-    * For each domain/URL, the script constructs search URLs targeting the WordPress site's search functionality (e.g., `https://example.com/?s=keyword`).
-    * It performs checks for "casino" and each specified additional keyword.
-    * It uses cURL to fetch the HTML content of the search results pages.
-    * It parses the HTML using `DOMDocument` and `DOMXPath` to find links (`<a>` tags) whose text contains the target keywords (case-insensitive).
-    * It extracts the title and link (resolving relative URLs) for matching posts, respecting the configured result limits.
-    * It returns the findings (or error details) as a JSON response.
-3.  **Frontend Processing (JavaScript):**
-    * The JavaScript sends asynchronous POST requests to the same PHP script for each domain/URL, managing concurrency up to the defined limit (`MAX_CONCURRENT_REQUESTS`).
-    * It updates a progress bar as checks complete.
-    * It receives the JSON response for each domain and dynamically populates a results table using UIkit components.
-    * Status indicators (Found/Not Found/Error) and highlighted keywords provide quick visual feedback.
-    * An "Export to CSV" button becomes available upon completion.
+```bash
+cp .env.example .env
+php -S 127.0.0.1:8080 -t public
+```
 
-### Requirements
+Open `http://127.0.0.1:8080`.
 
-* PHP >= 8.1 (with cURL and DOM extensions enabled, which are standard)
-* A web server (like Apache or Nginx) capable of running PHP scripts.
-* A modern web browser that supports Fetch API and other ES6+ JavaScript features.
+### Option B: Docker
 
-### How to Use
+```bash
+docker compose up --build
+```
 
-1.  Download the single PHP file (e.g., `forbidden_checker.php`) from this repository.
-2.  Upload the file to your web server.
-3.  Access the file through your web browser (e.g., `http://yourdomain.com/forbidden_checker.php`).
-4.  Enter the list of domains or URLs you want to check in the text area, one per line.
-5.  Optionally, enter additional keywords (separated by commas) in the corresponding input field.
-6.  Click the "Start Checking" button.
-7.  Monitor the progress bar and view the results in the table that appears.
-8.  Once completed, click the "Export to CSV" button if you wish to download the results.
+Open `http://127.0.0.1:8080`.
 
----
+### Option C: Shared Hosting
 
-## Türkçe Açıklama
+1. Upload project files.
+2. Point document root to `public/`.
+3. Set writable permissions for `storage/`.
+4. Ensure Apache rewrite is enabled (`public/.htaccess` is included).
+5. Set environment variables in hosting panel.
 
-### Genel Bakış
+## Default Admin Account
 
-**Advanced Forbidden Content Checker**, kullanıcıların bir WordPress web sitesi listesini taramasına yardımcı olmak için tasarlanmış, tek dosyadan oluşan bir PHP web uygulamasıdır. Sitelerin iç arama sonuçlarında "casino" anahtar kelimesini veya kullanıcı tanımlı diğer anahtar kelimeleri içeren gönderiler olup olmadığını kontrol eder. Bu araç, özellikle web sitesi içeriklerini belirli terimler açısından hızlı ve verimli bir şekilde izlemek için kullanışlıdır.
+Initial seed values (change immediately in production):
 
-Bu sürüm (v2.0), modern teknolojiler ve geliştirilmiş özelliklerle sıfırdan yeniden oluşturulmuş, orijinal v1.0'dan önemli ölçüde yükseltilmiş bir versiyondur.
+- Email: `admin@example.com`
+- Password: `admin123!ChangeNow`
 
-### Önemli Özellikler (v2.0)
+Override with:
 
-* **Tek Dosya Uygulaması:** Arka uç (PHP) ve ön uç (HTML/CSS/JS) mantığını yönetimi kolay tek bir dosyada birleştirir.
-* **Modern Kullanıcı Arayüzü:** Temiz, duyarlı ve kullanıcı dostu bir arayüz için [UIkit 3](https://getuikit.com/) framework'ünü kullanır.
-* **Çoklu Anahtar Kelime Desteği:** Varsayılan "casino" anahtar kelimesini kontrol eder ve kullanıcıların virgülle ayrılmış birden fazla ek anahtar kelime girmesine olanak tanır.
-* **Eş Zamanlı Kontroller:** Alan adı/URL listesini eş zamanlı olarak (yapılandırılabilir bir sınıra kadar) asenkron JavaScript istekleri kullanarak işler, bu da v1.0'ın sıralı yaklaşımına kıyasla büyük listeler için kontrolleri önemli ölçüde hızlandırır.
-* **Yapılandırılabilir Sonuç Limitleri:** PHP kodundaki sabitler aracılığıyla anahtar kelime başına ("casino" ve her ek anahtar kelime için) gösterilen sonuç sayısını sınırlar.
-* **Anahtar Kelime Vurgulama:** Bulunan anahtar kelimeler, kolay tanımlama için çıktı tablosundaki sonuç başlıklarında vurgulanır.
-* **CSV Dışa Aktarma:** Kullanıcıların çevrimdışı analiz veya kayıt tutma için sonuç tablosunu bir CSV dosyasına aktarmasına olanak tanır.
-* **Geliştirilmiş Hata Yönetimi:** Getirme hataları (cURL hataları, HTTP durum kodları) hakkında daha net geri bildirim sağlar.
-* **İyileştirilmiş URL Ayrıştırma:** Farklı URL formatlarının ve göreceli bağlantı çözümlemesinin daha sağlam bir şekilde ele alınmasını sağlar.
-* **PHP 8.1+ Uyumluluğu:** Modern PHP özelliklerini kullanır ve PHP sürüm 8.1 veya üstünü gerektirir.
-* **Tamamen İngilizce Arayüz:** Daha geniş erişilebilirlik için tüm kullanıcı arayüzü öğeleri İngilizce olarak sunulur.
+- `FCC_ADMIN_EMAIL`
+- `FCC_ADMIN_PASSWORD`
 
-### Nasıl Çalışır
+## Environment Variables
 
-1.  **Girdi:** Kullanıcı, alan adlarının veya tam URL'lerin bir listesini (her satıra bir tane) girer ve isteğe bağlı olarak virgülle ayrılmış ek anahtar kelimeler ekler.
-2.  **Arka Uç İşlemleri (PHP):**
-    * Her alan adı/URL için betik, WordPress sitesinin arama işlevini hedefleyen arama URL'leri oluşturur (örneğin, `https://example.com/?s=keyword`).
-    * "Casino" ve belirtilen her ek anahtar kelime için kontroller gerçekleştirir.
-    * Arama sonuçları sayfalarının HTML içeriğini getirmek için cURL kullanır.
-    * Metinleri hedef anahtar kelimeleri (büyük/küçük harfe duyarsız) içeren bağlantıları (`<a>` etiketleri) bulmak için `DOMDocument` ve `DOMXPath` kullanarak HTML'yi ayrıştırır.
-    * Yapılandırılmış sonuç limitlerine uyarak eşleşen gönderiler için başlığı ve bağlantıyı (göreceli URL'leri çözerek) çıkarır.
-    * Bulguları (veya hata ayrıntılarını) bir JSON yanıtı olarak döndürür.
-3.  **Ön Uç İşlemleri (JavaScript):**
-    * JavaScript, her alan adı/URL için aynı PHP betiğine asenkron POST istekleri gönderir ve eş zamanlılığı tanımlanan sınıra (`MAX_CONCURRENT_REQUESTS`) kadar yönetir.
-    * Kontroller tamamlandıkça bir ilerleme çubuğunu günceller.
-    * Her alan adı için JSON yanıtını alır ve UIkit bileşenlerini kullanarak dinamik olarak bir sonuç tablosunu doldurur.
-    * Durum göstergeleri (Bulundu/Bulunamadı/Hata) ve vurgulanan anahtar kelimeler hızlı görsel geri bildirim sağlar.
-    * Tamamlandığında bir "Export to CSV" düğmesi kullanılabilir hale gelir.
+See `.env.example` for full list.
 
-### Gereksinimler
+Key variables:
 
-* PHP >= 8.1 (cURL ve DOM eklentileri etkinleştirilmiş olarak, ki bunlar standarttır)
-* PHP betiklerini çalıştırabilen bir web sunucusu (Apache veya Nginx gibi).
-* Fetch API ve diğer ES6+ JavaScript özelliklerini destekleyen modern bir web tarayıcısı.
+- `FCC_APP_SECRET`: required for secure token hashing and report signatures
+- `FCC_DB_PATH`: SQLite database location
+- `FCC_LOG_FILE`: app log output
+- `FCC_DEFAULT_LOCALE`: default locale (`en-US`)
+- `FCC_ALLOW_PRIVATE_NETWORK`: set `1` only for trusted internal scans
+- `FCC_WEBHOOK_URL`: optional global webhook
+- `FCC_EMAIL_ENABLED`: set `1` to send email notifications
 
-### Nasıl Kullanılır
+## Security Model
 
-1.  Bu depodan tek PHP dosyasını (örneğin, `forbidden_checker.php`) indirin.
-2.  Dosyayı web sunucunuza yükleyin.
-3.  Dosyaya web tarayıcınız üzerinden erişin (örneğin, `http://alanadiniz.com/forbidden_checker.php`).
-4.  Kontrol etmek istediğiniz alan adlarının veya URL'lerin listesini metin alanına her satıra bir tane olacak şekilde girin.
-5.  İsteğe bağlı olarak, ilgili giriş alanına ek anahtar kelimeleri (virgülle ayırarak) girin.
-6.  "Start Checking" düğmesine tıklayın.
-7.  İlerleme çubuğunu izleyin ve görünen tablodaki sonuçları görüntüleyin.
-8.  Tamamlandığında, sonuçları indirmek isterseniz "Export to CSV" düğmesine tıklayın.
+### Authentication and Authorization
 
+- Session-based login for web UI
+- Bearer API token auth for automation
+- RBAC:
+  - `admin`: full access
+  - `analyst`: scan + config + reports
+  - `viewer`: read-only scan/report access
 
----
+### Controls
 
-## Original Author (v1.0)
+- CSRF token required on state-changing requests (session-auth paths)
+- Request rate limiting (global and per user/IP)
+- SSRF protection with scheme restriction + IP range blocking + DNS pinning
+- Domain allow/deny policy enforcement
+- Circuit breaker to reduce repeated failures to unstable hosts
 
-* **Ercan ATAY** - [https://www.ercanatay.com](https://www.ercanatay.com)
+## API Reference (v1)
 
-*(v2.0 developed based on the original concept)*
+Base path: `/api/v1`
 
----
+### Response Envelope
+
+```json
+{
+  "success": true,
+  "data": {},
+  "error": null,
+  "meta": {}
+}
+```
+
+Error envelope fields:
+
+- `code`
+- `message`
+- `locale`
+- `traceId`
+- `details`
+
+### Core Endpoints
+
+- `POST /auth/login`
+- `POST /auth/logout`
+- `POST /auth/tokens`
+- `GET /me`
+- `GET /locales`
+- `POST /scans`
+- `GET /scans/{id}`
+- `GET /scans/{id}/results`
+- `GET /scans/{id}/diff/{baselineId}`
+- `POST /scans/{id}/cancel`
+- `GET /analytics/trends?period=day|week|month`
+- `GET /reports/{id}.{format}` (`csv|json|xlsx|pdf`)
+- `GET /domain-policies`, `POST /domain-policies`
+- `GET /suppression-rules`, `POST /suppression-rules`
+- `GET /scan-profiles`, `POST /scan-profiles`
+- `GET /keyword-sets`, `POST /keyword-sets`
+- `GET /healthz`, `GET /readyz`, `GET /metrics`
+
+### Example: Create a Scan Job
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/scans \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "targets": ["example.com", "https://news.example.org"],
+    "keywords": ["casino", "betting"],
+    "excludeKeywords": ["demo"],
+    "keywordMode": "exact",
+    "exactMatch": false,
+    "sync": false
+  }'
+```
+
+### Example: Download Report
+
+```bash
+curl -L "http://127.0.0.1:8080/api/v1/reports/12.csv" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -o scan-12.csv
+```
+
+## i18n Guide
+
+Supported locales:
+
+- `en-US`
+- `tr-TR`
+- `es-ES`
+- `fr-FR`
+- `de-DE`
+- `it-IT`
+- `pt-BR`
+- `nl-NL`
+- `ar-SA` (RTL)
+- `ru-RU`
+
+Fallback order:
+
+1. Explicit query (`?lang=`)
+2. User profile locale
+3. `Accept-Language`
+4. `en-US`
+
+All locale files share an identical key catalog. Validation is enforced in tests.
+
+## Queue and Worker
+
+Queue jobs are stored in SQLite (`scan_jobs`).
+
+Process one job and exit:
+
+```bash
+php bin/worker.php --once
+```
+
+Run continuously:
+
+```bash
+php bin/worker.php
+```
+
+Stale running jobs are recovered automatically at worker startup.
+
+## Compatibility and Migration
+
+- Legacy endpoint is kept at:
+  - `/public/forbidden_checker.php`
+  - root `forbidden_checker.php` wrapper
+- Legacy AJAX payloads still receive a compatibility response with deprecation headers.
+- New development should target `/api/v1/*`.
+
+## Testing and Quality Gates
+
+Run tests:
+
+```bash
+php tests/run.php
+```
+
+Coverage includes:
+
+- URL normalization
+- Locale key completeness
+- Severity scoring
+- TOTP verification
+- Schema and seed validation
+
+Recommended CI gates:
+
+1. `php -l` on all PHP files
+2. `php tests/run.php`
+3. locale key parity check (included)
+4. API smoke checks
+
+## Troubleshooting
+
+### 1) `Route not found`
+
+- Confirm web root points to `public/`.
+
+### 2) `Authentication required`
+
+- Login via UI or send `Authorization: Bearer <token>`.
+
+### 3) CSRF errors on POST
+
+- For session-auth requests, include header `X-CSRF-Token`.
+
+### 4) Scans fail with SSRF block
+
+- Target resolves to private/reserved IP.
+- Use `FCC_ALLOW_PRIVATE_NETWORK=1` only in trusted environments.
+
+### 5) No XLSX output
+
+- Ensure `zip` extension is installed.
+
+### 6) Email notifications not sending
+
+- Set `FCC_EMAIL_ENABLED=1` and confirm mail transport availability.
+
+## Operations Notes
+
+- Logs: `storage/logs/app.log`
+- Reports: `storage/reports/`
+- DB: `storage/checker.sqlite`
+- Metrics: `/api/v1/metrics` (Prometheus format)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details (assuming you add an MIT license file).
+This project is licensed under the MIT License. See `LICENSE`.
