@@ -216,6 +216,9 @@ final class Scanner
         }
 
         $matches = [];
+        // Optimization: Prepare keyword once outside loop
+        $preparedKeyword = $this->prepareKeyword($keyword, $regexMode, $exactMatch);
+
         foreach ($decoded as $item) {
             if (!is_array($item)) {
                 continue;
@@ -225,7 +228,7 @@ final class Scanner
             if ($title === '' || $link === '') {
                 continue;
             }
-            if (!$this->matchKeyword($title, $keyword, $regexMode, $exactMatch)) {
+            if (!$this->matchKeyword($title, $preparedKeyword, $regexMode, $exactMatch)) {
                 continue;
             }
 
@@ -302,11 +305,14 @@ final class Scanner
         $xpath = new DOMXPath($dom);
         $results = [];
 
+        // Optimization: Prepare keyword once outside loop
+        $preparedKeyword = $this->prepareKeyword($keyword, $regexMode, $exactMatch);
+
         $query = "//a[normalize-space(string(.)) != '']";
         if (!$regexMode && !$exactMatch) {
             $query = sprintf(
                 "//a[contains(translate(normalize-space(string(.)), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), %s)]",
-                $this->xpathLiteral(mb_strtolower($keyword, 'UTF-8'))
+                $this->xpathLiteral($preparedKeyword)
             );
         }
 
@@ -333,7 +339,7 @@ final class Scanner
                 continue;
             }
 
-            if (!$this->matchKeyword($title, $keyword, $regexMode, $exactMatch)) {
+            if (!$this->matchKeyword($title, $preparedKeyword, $regexMode, $exactMatch)) {
                 continue;
             }
 
@@ -514,18 +520,30 @@ final class Scanner
         return str_contains($ct, 'text/html') || str_contains($ct, 'application/xhtml+xml');
     }
 
-    private function matchKeyword(string $text, string $keyword, bool $regexMode, bool $exactMatch): bool
+    private function prepareKeyword(string $keyword, bool $regexMode, bool $exactMatch): string
     {
         if ($regexMode) {
-            $regex = '/' . str_replace('/', '\\/', $keyword) . '/iu';
-            return @preg_match($regex, $text) === 1;
+            return '/' . str_replace('/', '\\/', $keyword) . '/iu';
         }
 
         if ($exactMatch) {
-            return mb_strtolower(trim($text), 'UTF-8') === mb_strtolower(trim($keyword), 'UTF-8');
+            return mb_strtolower(trim($keyword), 'UTF-8');
         }
 
-        return str_contains(mb_strtolower($text, 'UTF-8'), mb_strtolower($keyword, 'UTF-8'));
+        return mb_strtolower($keyword, 'UTF-8');
+    }
+
+    private function matchKeyword(string $text, string $preparedKeyword, bool $regexMode, bool $exactMatch): bool
+    {
+        if ($regexMode) {
+            return @preg_match($preparedKeyword, $text) === 1;
+        }
+
+        if ($exactMatch) {
+            return mb_strtolower(trim($text), 'UTF-8') === $preparedKeyword;
+        }
+
+        return str_contains(mb_strtolower($text, 'UTF-8'), $preparedKeyword);
     }
 
     private function xpathLiteral(string $value): string
