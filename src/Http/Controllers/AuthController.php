@@ -46,7 +46,7 @@ final class AuthController extends ApiController
                 $this->app->translator()->t('error.auth_failed', $locale),
                 $locale,
                 Utils::traceId(),
-                ['reason' => $e->getMessage()],
+                ['reason' => $this->safeErrorMessage($e, 'auth.login')],
                 401
             );
         }
