@@ -1,0 +1,66 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+This project follows [Semantic Versioning](https://semver.org/).
+
+## [3.0.0] - 2026-02-08
+
+### Added
+
+- Modular architecture with dedicated `public`, `src`, `database`, `locales`, and `tests` directories.
+- REST API v1 with standardized success/error envelope.
+- Role-based access control (`admin`, `analyst`, `viewer`).
+- Session auth, API token auth, and optional TOTP MFA support.
+- CSRF protection and secure session cookie settings.
+- Rate limiting for global and per-user/IP controls.
+- SQLite persistence schema for users, scans, profiles, keyword sets, suppression rules, notifications, and audit data.
+- Queue-backed scan execution and worker process (`bin/worker.php`) with stale job recovery.
+- WordPress-first scan strategy (`/?s=` and WordPress REST search) with generic HTML fallback mode.
+- Retry with exponential backoff and jitter.
+- Domain circuit breaker and allowlist/denylist governance.
+- Severity scoring and false-positive suppression rules.
+- Baseline diff endpoint and trend analytics endpoint.
+- Export engine for CSV, JSON, XLSX, and signed PDF reports.
+- Webhook notification channel and optional email digest channel.
+- Health (`/healthz`), readiness (`/readyz`), and Prometheus metrics (`/metrics`) endpoints.
+- Full i18n runtime support with 10 locales:
+  - en-US
+  - tr-TR
+  - es-ES
+  - fr-FR
+  - de-DE
+  - it-IT
+  - pt-BR
+  - nl-NL
+  - ar-SA (RTL)
+  - ru-RU
+- Shared-hosting rewrite configuration (`public/.htaccess`).
+- Docker support (`Dockerfile`, `docker-compose.yml`).
+- CI workflow for linting and tests.
+- MIT license file.
+
+### Changed
+
+- Replaced legacy single-file runtime path with modular bootstrap flow.
+- Updated user interface to consume REST API and render results using safe DOM APIs.
+- Upgraded project documentation to full US-English v3 release documentation.
+
+### Fixed
+
+- Fixed legacy frontend concurrency race by introducing deterministic worker-pool execution logic.
+- Removed unsafe rendering patterns that could enable reflected/stored XSS from remote content.
+- Implemented robust XPath literal handling for keywords including quotes.
+- Improved URL normalization and relative URL resolution behavior.
+- Introduced clearer scan status model: `completed`, `partial`, `failed`, `cancelled`.
+
+### Security
+
+- Added SSRF safeguards with host/IP validation and blocked private/reserved ranges.
+- Added RBAC enforcement across protected API endpoints.
+- Added CSRF validation for session-based state-changing requests.
+- Added audit trail records for sensitive auth/config operations.
+
+## [Unreleased]
+
+- No unreleased changes yet.

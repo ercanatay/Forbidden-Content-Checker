@@ -1,60 +1,74 @@
-# Forbidden Content Checker v3
+# Forbidden Content Checker
 
-A modular, secure, multilingual forbidden-content scanning platform for WordPress-first and generic website checks.
+Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-- Runtime: PHP 8.2+
-- UI + REST API: `/public/index.php` + `/api/v1/*`
-- Storage: SQLite (`storage/checker.sqlite` by default)
-- Auth: session login + API tokens + role-based permissions
-- Languages: 10 locales including Turkish and Arabic (RTL)
+Current release: **v3.0.0** (February 8, 2026)
 
-## Feature Matrix (36 Professional Features)
+## Table of Contents
 
-| # | Feature | Status |
-|---|---|---|
-| 1 | Role-based access control (`admin`, `analyst`, `viewer`) | Implemented |
-| 2 | Secure login/logout with Argon2id hashing | Implemented |
-| 3 | Optional TOTP MFA for admin users | Implemented |
-| 4 | CSRF protection for state-changing requests | Implemented |
-| 5 | Secure session cookie policy (`HttpOnly`, `Secure`, `SameSite=Lax`) | Implemented |
-| 6 | API token management with scopes | Implemented |
-| 7 | Full audit trail for auth and config actions | Implemented |
-| 8 | Scan history with immutable run records | Implemented |
-| 9 | Domain allowlist and denylist governance | Implemented |
-| 10 | SSRF hardening with private/reserved IP block and DNS pinning | Implemented |
-| 11 | Global and per-user/IP rate limiting | Implemented |
-| 12 | Retry policy with exponential backoff and jitter | Implemented |
-| 13 | Per-domain circuit breaker | Implemented |
-| 14 | SQLite-backed queue for background scans | Implemented |
-| 15 | Worker process with configurable concurrency behavior | Implemented |
-| 16 | Resumable scans after restart (stale job recovery) | Implemented |
-| 17 | Scan profiles | Implemented |
-| 18 | Keyword sets with include/exclude groups | Implemented |
-| 19 | Exact-match and regex keyword modes | Implemented |
-| 20 | WordPress-first detection (`/?s=`, `wp-json/wp/v2/search`) | Implemented |
-| 21 | Generic HTML fallback scanning | Implemented |
-| 22 | Pagination traversal (depth-capped) | Implemented |
-| 23 | Canonical URL normalization and dedupe | Implemented |
-| 24 | Content-type validation before parsing | Implemented |
-| 25 | Severity scoring per finding | Implemented |
-| 26 | False-positive suppression rules | Implemented |
-| 27 | Baseline comparison and diff reports | Implemented |
-| 28 | Trend analytics by day/week/month | Implemented |
-| 29 | CSV export with UTF-8 BOM | Implemented |
-| 30 | JSON export with metadata | Implemented |
-| 31 | XLSX export | Implemented |
-| 32 | Signed PDF summary report (HMAC signature) | Implemented |
-| 33 | Webhook notifications | Implemented |
-| 34 | Email completion digest notifications | Implemented |
-| 35 | Health, readiness, and metrics endpoints | Implemented |
-| 36 | Full i18n for UI + API errors in 10 languages | Implemented |
+1. Overview
+2. What Is New in v3
+3. Core Capabilities
+4. Architecture
+5. Requirements
+6. Quick Start
+7. Configuration
+8. Security Model
+9. API Reference
+10. Queue and Worker
+11. Internationalization (10 languages)
+12. Reporting and Exports
+13. Monitoring and Operations
+14. Compatibility and Migration
+15. Testing and CI
+16. Troubleshooting
+17. Changelog and Release Policy
+18. License
 
-## Repository Layout
+## Overview
+
+v3 upgrades the project from a single-file checker to a modular application with:
+
+- Web UI + REST API (`/api/v1/*`)
+- SQLite persistence
+- Role-based access control (`admin`, `analyst`, `viewer`)
+- Secure scanning pipeline with SSRF protection and retry/circuit-breaker logic
+- Queue + worker model for large batches
+- Localization in 10 languages (including Turkish and Arabic/RTL)
+- Multi-format reporting (`csv`, `json`, `xlsx`, `pdf`)
+
+## What Is New in v3
+
+- Modular architecture under `src/`, `public/`, `database/`, `locales/`, `tests/`
+- New API envelope and stable error model
+- Auth hardening (Argon2id, CSRF, secure sessions, API tokens)
+- Deterministic scan queue behavior and resumable worker flow
+- Baseline diff and trend analytics
+- Full release documentation + changelog-driven versioning
+
+## Core Capabilities
+
+1. Role-based access control (`admin`, `analyst`, `viewer`)
+2. Session login + API token authentication
+3. Optional TOTP MFA support
+4. Domain allowlist/denylist policy enforcement
+5. WordPress-first scan strategy with generic HTML fallback
+6. Include/exclude keyword model and regex mode
+7. Retry with backoff + jitter and per-domain circuit breaker
+8. False-positive suppression rules
+9. Historical scan records and immutable run outputs
+10. CSV/JSON/XLSX/Signed-PDF exports
+11. Webhook and email notifications
+12. Health/readiness/metrics endpoints
+13. Full i18n support for UI and API messages
+
+## Architecture
 
 ```text
 public/
   index.php
-  forbidden_checker.php         # deprecated compatibility shim
+  forbidden_checker.php            # deprecated compatibility shim
+  .htaccess
   assets/
     app.css
     app.js
@@ -63,22 +77,8 @@ src/
   Config.php
   bootstrap.php
   Http/
-    Router.php
-    Request.php
-    Response.php
-    Controllers/
   Domain/
-    Auth/
-    I18n/
-    Scan/
-    Analytics/
   Infrastructure/
-    Db/
-    Queue/
-    Security/
-    Export/
-    Notification/
-    Observability/
 database/
   schema.sql
 locales/
@@ -92,92 +92,94 @@ tests/
 
 ## Requirements
 
-- PHP 8.2+ with extensions:
+- PHP 8.2+
+- PHP extensions:
   - `curl`
   - `dom`
   - `mbstring`
   - `openssl`
   - `pdo_sqlite`
-  - `zip` (recommended for native XLSX generation)
-- Web server (Apache/Nginx) or PHP built-in server
+  - `zip` (recommended)
+- Apache/Nginx or PHP built-in server
 
 ## Quick Start
 
-### Option A: Local PHP Built-in Server
+### Local (PHP built-in)
 
 ```bash
 cp .env.example .env
 php -S 127.0.0.1:8080 -t public
 ```
 
-Open `http://127.0.0.1:8080`.
+Open: `http://127.0.0.1:8080`
 
-### Option B: Docker
+### Docker
 
 ```bash
 docker compose up --build
 ```
 
-Open `http://127.0.0.1:8080`.
+Open: `http://127.0.0.1:8080`
 
-### Option C: Shared Hosting
+### Shared Hosting
 
-1. Upload project files.
+1. Upload repository files.
 2. Point document root to `public/`.
-3. Set writable permissions for `storage/`.
-4. Ensure Apache rewrite is enabled (`public/.htaccess` is included).
-5. Set environment variables in hosting panel.
+3. Ensure `storage/` is writable.
+4. Ensure Apache rewrite is enabled (`public/.htaccess` included).
+5. Define environment variables in hosting panel.
 
-## Default Admin Account
+## Configuration
 
-Initial seed values (change immediately in production):
+Primary settings are loaded from environment variables.
+See: `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/.env.example`
+
+Most important variables:
+
+- `FCC_APP_SECRET`: required; rotate in production
+- `FCC_DB_PATH`: SQLite path (default `storage/checker.sqlite`)
+- `FCC_LOG_FILE`: log output path
+- `FCC_DEFAULT_LOCALE`: default locale (recommended `en-US`)
+- `FCC_ALLOW_PRIVATE_NETWORK`: keep `0` unless fully trusted internal targets
+- `FCC_WEBHOOK_URL`: optional global webhook endpoint
+- `FCC_EMAIL_ENABLED`: set to `1` to enable email digest notifications
+- `FCC_ADMIN_EMAIL` / `FCC_ADMIN_PASSWORD`: bootstrap admin account
+
+Default bootstrap credentials (change immediately):
 
 - Email: `admin@example.com`
 - Password: `admin123!ChangeNow`
-
-Override with:
-
-- `FCC_ADMIN_EMAIL`
-- `FCC_ADMIN_PASSWORD`
-
-## Environment Variables
-
-See `.env.example` for full list.
-
-Key variables:
-
-- `FCC_APP_SECRET`: required for secure token hashing and report signatures
-- `FCC_DB_PATH`: SQLite database location
-- `FCC_LOG_FILE`: app log output
-- `FCC_DEFAULT_LOCALE`: default locale (`en-US`)
-- `FCC_ALLOW_PRIVATE_NETWORK`: set `1` only for trusted internal scans
-- `FCC_WEBHOOK_URL`: optional global webhook
-- `FCC_EMAIL_ENABLED`: set `1` to send email notifications
 
 ## Security Model
 
 ### Authentication and Authorization
 
-- Session-based login for web UI
-- Bearer API token auth for automation
-- RBAC:
-  - `admin`: full access
-  - `analyst`: scan + config + reports
-  - `viewer`: read-only scan/report access
+- Session authentication for UI
+- Bearer token authentication for automation/API integrations
+- RBAC permissions:
+  - `admin`: full administration
+  - `analyst`: scans, profiles, rules, reports
+  - `viewer`: read-only access to scans/reports/metrics
 
-### Controls
+### Security Controls
 
-- CSRF token required on state-changing requests (session-auth paths)
-- Request rate limiting (global and per user/IP)
-- SSRF protection with scheme restriction + IP range blocking + DNS pinning
-- Domain allow/deny policy enforcement
-- Circuit breaker to reduce repeated failures to unstable hosts
+- CSRF required for state-changing session-auth requests
+- Rate limiting (global + per user/IP)
+- SSRF protection:
+  - HTTP(S)-only enforcement
+  - private/reserved IP blocking
+  - DNS pinning via cURL resolve
+- Domain policy controls (allow/deny)
+- Circuit breaker for unstable or failing domains
+- Audit logging for sensitive actions
 
-## API Reference (v1)
+## API Reference
 
 Base path: `/api/v1`
 
-### Response Envelope
+### Envelope
+
+Success:
 
 ```json
 {
@@ -188,13 +190,22 @@ Base path: `/api/v1`
 }
 ```
 
-Error envelope fields:
+Error:
 
-- `code`
-- `message`
-- `locale`
-- `traceId`
-- `details`
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "validation_error",
+    "message": "Validation failed.",
+    "locale": "en-US",
+    "traceId": "...",
+    "details": {}
+  },
+  "meta": {}
+}
+```
 
 ### Core Endpoints
 
@@ -209,14 +220,14 @@ Error envelope fields:
 - `GET /scans/{id}/diff/{baselineId}`
 - `POST /scans/{id}/cancel`
 - `GET /analytics/trends?period=day|week|month`
-- `GET /reports/{id}.{format}` (`csv|json|xlsx|pdf`)
+- `GET /reports/{id}.{format}` where `format=csv|json|xlsx|pdf`
 - `GET /domain-policies`, `POST /domain-policies`
 - `GET /suppression-rules`, `POST /suppression-rules`
 - `GET /scan-profiles`, `POST /scan-profiles`
 - `GET /keyword-sets`, `POST /keyword-sets`
 - `GET /healthz`, `GET /readyz`, `GET /metrics`
 
-### Example: Create a Scan Job
+### Example: Create Scan
 
 ```bash
 curl -X POST http://127.0.0.1:8080/api/v1/scans \
@@ -232,15 +243,25 @@ curl -X POST http://127.0.0.1:8080/api/v1/scans \
   }'
 ```
 
-### Example: Download Report
+## Queue and Worker
+
+Queued jobs are stored in SQLite (`scan_jobs`).
+
+Run one cycle:
 
 ```bash
-curl -L "http://127.0.0.1:8080/api/v1/reports/12.csv" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -o scan-12.csv
+php bin/worker.php --once
 ```
 
-## i18n Guide
+Run continuously:
+
+```bash
+php bin/worker.php
+```
+
+Stale running jobs are recovered on worker startup.
+
+## Internationalization (10 Languages)
 
 Supported locales:
 
@@ -257,40 +278,46 @@ Supported locales:
 
 Fallback order:
 
-1. Explicit query (`?lang=`)
-2. User profile locale
+1. explicit query (`?lang=`)
+2. user profile locale
 3. `Accept-Language`
 4. `en-US`
 
-All locale files share an identical key catalog. Validation is enforced in tests.
+All locale files must keep the same key set.
 
-## Queue and Worker
+## Reporting and Exports
 
-Queue jobs are stored in SQLite (`scan_jobs`).
+Available report outputs:
 
-Process one job and exit:
+- `csv` (UTF-8 BOM)
+- `json` (full structured metadata)
+- `xlsx`
+- `pdf` (signed summary with HMAC)
 
-```bash
-php bin/worker.php --once
-```
+Report endpoint:
 
-Run continuously:
+- `GET /api/v1/reports/{scanId}.{format}`
 
-```bash
-php bin/worker.php
-```
+## Monitoring and Operations
 
-Stale running jobs are recovered automatically at worker startup.
+- Health: `GET /api/v1/healthz`
+- Readiness: `GET /api/v1/readyz`
+- Metrics (Prometheus): `GET /api/v1/metrics`
+- Logs: `storage/logs/app.log`
+- Reports: `storage/reports/`
+- Database: `storage/checker.sqlite`
 
 ## Compatibility and Migration
 
-- Legacy endpoint is kept at:
-  - `/public/forbidden_checker.php`
-  - root `forbidden_checker.php` wrapper
-- Legacy AJAX payloads still receive a compatibility response with deprecation headers.
-- New development should target `/api/v1/*`.
+Legacy endpoint remains available for one release cycle:
 
-## Testing and Quality Gates
+- `/public/forbidden_checker.php`
+- root `forbidden_checker.php` wrapper
+
+Legacy AJAX contract is still supported and marked deprecated.
+Use `/api/v1/*` for all new integrations.
+
+## Testing and CI
 
 Run tests:
 
@@ -298,55 +325,49 @@ Run tests:
 php tests/run.php
 ```
 
-Coverage includes:
+Checks currently included:
 
 - URL normalization
-- Locale key completeness
-- Severity scoring
-- TOTP verification
-- Schema and seed validation
+- locale key completeness
+- severity scoring
+- TOTP validation
+- schema + seed verification
 
-Recommended CI gates:
+GitHub Actions CI pipeline:
 
-1. `php -l` on all PHP files
-2. `php tests/run.php`
-3. locale key parity check (included)
-4. API smoke checks
+- PHP lint for all `.php` files
+- test run via `php tests/run.php`
 
 ## Troubleshooting
 
-### 1) `Route not found`
+### Route not found
 
 - Confirm web root points to `public/`.
+- Confirm rewrite is enabled for Apache.
 
-### 2) `Authentication required`
+### Authentication required
 
-- Login via UI or send `Authorization: Bearer <token>`.
+- Use UI login or Bearer token.
 
-### 3) CSRF errors on POST
+### CSRF errors
 
-- For session-auth requests, include header `X-CSRF-Token`.
+- Send `X-CSRF-Token` for session-auth POST/PUT/PATCH/DELETE calls.
 
-### 4) Scans fail with SSRF block
+### SSRF block errors
 
-- Target resolves to private/reserved IP.
-- Use `FCC_ALLOW_PRIVATE_NETWORK=1` only in trusted environments.
+- Target resolves to blocked private/reserved address.
+- Set `FCC_ALLOW_PRIVATE_NETWORK=1` only in trusted environments.
 
-### 5) No XLSX output
+### XLSX export issues
 
 - Ensure `zip` extension is installed.
 
-### 6) Email notifications not sending
+## Changelog and Release Policy
 
-- Set `FCC_EMAIL_ENABLED=1` and confirm mail transport availability.
-
-## Operations Notes
-
-- Logs: `storage/logs/app.log`
-- Reports: `storage/reports/`
-- DB: `storage/checker.sqlite`
-- Metrics: `/api/v1/metrics` (Prometheus format)
+- Changelog file: `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/CHANGELOG.md`
+- Version file: `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/VERSION`
+- Versioning model: Semantic Versioning (`MAJOR.MINOR.PATCH`)
 
 ## License
 
-This project is licensed under the MIT License. See `LICENSE`.
+MIT License. See `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/LICENSE`.
