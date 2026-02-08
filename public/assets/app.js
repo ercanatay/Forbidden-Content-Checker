@@ -131,6 +131,7 @@
       t("table.source", "Source"),
     ].forEach((label) => {
       const th = create("th", "", label);
+      th.scope = "col";
       headRow.appendChild(th);
     });
 
@@ -537,6 +538,7 @@
 
     const right = create("div", "controls");
     const localeSelect = create("select");
+    localeSelect.setAttribute("aria-label", t("app.locale_select", "Select language"));
     state.supportedLocales.forEach((code) => {
       const opt = create("option", "", code);
       opt.value = code;
@@ -564,6 +566,8 @@
 
     const noticeHost = create("div");
     noticeHost.id = "noticeHost";
+    noticeHost.setAttribute("role", "status");
+    noticeHost.setAttribute("aria-live", "polite");
     top.appendChild(noticeHost);
 
     shell.appendChild(top);
@@ -662,6 +666,7 @@
     progress.id = "scanProgress";
     progress.max = 100;
     progress.value = 0;
+    progress.setAttribute("aria-label", t("scan.progress", "Scan progress"));
     form.appendChild(progress);
 
     const progressText = create("div", "mono", "0/0");
@@ -711,6 +716,7 @@
       header.appendChild(create("p", "subtitle", t("auth.required", "Please authenticate to continue.")));
       const localeRow = create("div", "controls");
       const localeSelect = create("select");
+      localeSelect.setAttribute("aria-label", t("app.locale_select", "Select language"));
       state.supportedLocales.forEach((code) => {
         const opt = create("option", "", code);
         opt.value = code;
@@ -724,6 +730,8 @@
       header.appendChild(localeRow);
       const noticeHost = create("div");
       noticeHost.id = "noticeHost";
+      noticeHost.setAttribute("role", "status");
+      noticeHost.setAttribute("aria-live", "polite");
       header.appendChild(noticeHost);
       wrapper.appendChild(header);
       wrapper.appendChild(authPanel());
