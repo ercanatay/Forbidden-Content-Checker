@@ -51,7 +51,7 @@
     }
   };
 
-  const create = (tag, className, text) => {
+  const create = (tag, className, text, attrs = {}) => {
     const el = document.createElement(tag);
     if (className) {
       el.className = className;
@@ -59,6 +59,7 @@
     if (text !== undefined) {
       el.textContent = text;
     }
+    Object.keys(attrs).forEach(k => el.setAttribute(k, attrs[k]));
     return el;
   };
 
@@ -130,6 +131,7 @@
       t("table.source", "Source"),
     ].forEach((label) => {
       const th = create("th", "", label);
+      th.scope = "col";
       headRow.appendChild(th);
     });
 
@@ -499,25 +501,24 @@
     const h = create("h2", "title", t("auth.title", "Authentication"));
     card.appendChild(h);
 
-    const form = create("form", "grid-3");
+    const form = create("form", "grid-3", undefined, { id: "loginForm" });
     form.innerHTML = `
       <div>
-        <label>${t("auth.email", "Email")}</label>
+        <label for="loginEmail">${t("auth.email", "Email")}</label>
         <input id="loginEmail" type="email" placeholder="admin@example.com" required>
       </div>
       <div>
-        <label>${t("auth.password", "Password")}</label>
+        <label for="loginPassword">${t("auth.password", "Password")}</label>
         <input id="loginPassword" type="password" placeholder="••••••••" required>
       </div>
       <div>
-        <label>${t("auth.otp", "MFA Code (optional)")}</label>
+        <label for="loginOtp">${t("auth.otp", "MFA Code (optional)")}</label>
         <input id="loginOtp" type="text" inputmode="numeric" maxlength="6" placeholder="123456">
       </div>
     `;
 
     const actions = create("div", "controls");
-    const submit = create("button", "", t("auth.login", "Login"));
-    submit.type = "submit";
+    const submit = create("button", "", t("auth.login", "Login"), { form: "loginForm", type: "submit" });
     actions.appendChild(submit);
 
     form.addEventListener("submit", login);
@@ -537,6 +538,7 @@
 
     const right = create("div", "controls");
     const localeSelect = create("select");
+    localeSelect.setAttribute("aria-label", t("app.locale_select", "Select language"));
     state.supportedLocales.forEach((code) => {
       const opt = create("option", "", code);
       opt.value = code;
@@ -564,6 +566,8 @@
 
     const noticeHost = create("div");
     noticeHost.id = "noticeHost";
+    noticeHost.setAttribute("role", "status");
+    noticeHost.setAttribute("aria-live", "polite");
     top.appendChild(noticeHost);
 
     shell.appendChild(top);
@@ -574,7 +578,7 @@
     const gridA = create("div", "grid-2");
 
     const targetsBlock = create("div");
-    targetsBlock.appendChild(create("label", "", t("scan.targets", "Targets (one per line)")));
+    targetsBlock.appendChild(create("label", "", t("scan.targets", "Targets (one per line)"), { for: "targets" }));
     const targets = create("textarea");
     targets.id = "targets";
     targets.rows = 7;
@@ -585,7 +589,7 @@
     const keywordsBlock = create("div", "shell");
 
     const keywordsWrap = create("div");
-    keywordsWrap.appendChild(create("label", "", t("scan.keywords", "Keywords")));
+    keywordsWrap.appendChild(create("label", "", t("scan.keywords", "Keywords"), { for: "keywords" }));
     const keywords = create("input");
     keywords.id = "keywords";
     keywords.value = "casino";
@@ -593,7 +597,7 @@
     keywordsWrap.appendChild(keywords);
 
     const excludesWrap = create("div");
-    excludesWrap.appendChild(create("label", "", t("scan.exclude_keywords", "Exclude Keywords")));
+    excludesWrap.appendChild(create("label", "", t("scan.exclude_keywords", "Exclude Keywords"), { for: "excludeKeywords" }));
     const excludeKeywords = create("input");
     excludeKeywords.id = "excludeKeywords";
     excludeKeywords.placeholder = "example: test, demo";
@@ -602,7 +606,7 @@
     const optionsGrid = create("div", "grid-2");
 
     const modeWrap = create("div");
-    modeWrap.appendChild(create("label", "", t("scan.keyword_mode", "Keyword Mode")));
+    modeWrap.appendChild(create("label", "", t("scan.keyword_mode", "Keyword Mode"), { for: "keywordMode" }));
     const mode = create("select");
     mode.id = "keywordMode";
     [
@@ -662,6 +666,7 @@
     progress.id = "scanProgress";
     progress.max = 100;
     progress.value = 0;
+    progress.setAttribute("aria-label", t("scan.progress", "Scan progress"));
     form.appendChild(progress);
 
     const progressText = create("div", "mono", "0/0");
@@ -711,6 +716,7 @@
       header.appendChild(create("p", "subtitle", t("auth.required", "Please authenticate to continue.")));
       const localeRow = create("div", "controls");
       const localeSelect = create("select");
+      localeSelect.setAttribute("aria-label", t("app.locale_select", "Select language"));
       state.supportedLocales.forEach((code) => {
         const opt = create("option", "", code);
         opt.value = code;
@@ -724,6 +730,8 @@
       header.appendChild(localeRow);
       const noticeHost = create("div");
       noticeHost.id = "noticeHost";
+      noticeHost.setAttribute("role", "status");
+      noticeHost.setAttribute("aria-live", "polite");
       header.appendChild(noticeHost);
       wrapper.appendChild(header);
       wrapper.appendChild(authPanel());
