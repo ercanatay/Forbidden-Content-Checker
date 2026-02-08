@@ -20,9 +20,8 @@ final class SuppressionService
      */
     public function activeRules(): array
     {
-        // Return cached rules if available — suppression rules don't change mid-scan,
-        // so querying once per service lifetime eliminates O(N) duplicate queries
-        // where N = number of matches checked during a scan.
+        // Return cached rules if available. Cache lifetime is controlled by
+        // callers (ScanService clears it per job) to avoid stale data in long-lived workers.
         if ($this->cachedRules !== null) {
             return $this->cachedRules;
         }

@@ -25,6 +25,11 @@ final class Scanner
     ) {
     }
 
+    public function clearRuntimeCaches(): void
+    {
+        $this->suppressionService->clearCache();
+    }
+
     /**
      * @param array<int, string> $keywords
      * @param array<string, mixed> $options

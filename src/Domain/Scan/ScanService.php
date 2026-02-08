@@ -148,6 +148,10 @@ final class ScanService
             'started_at' => gmdate('Y-m-d H:i:s'),
         ]);
 
+        // Worker processes are long-lived; reset per-job caches to avoid stale policy/rule data.
+        $this->domainPoliciesCache = null;
+        $this->scanner->clearRuntimeCaches();
+
         $keywords = is_array($job['keywords']) ? $job['keywords'] : [];
         $options = is_array($job['options']) ? $job['options'] : [];
 
