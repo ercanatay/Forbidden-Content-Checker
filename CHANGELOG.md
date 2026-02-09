@@ -8,6 +8,24 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.1.2] - 2026-02-09
+
+### Changed
+
+- Refreshed domain-policy and suppression-rule caches per scan job in long-lived worker flows.
+- Sanitized API controller error responses to prevent leaking internal exception details by default.
+- Hardened authentication timing mitigation by using representative password-hash verification for unknown users.
+- Improved auth test isolation with per-test log files, explicit session lifecycle handling, and SQLite sidecar cleanup.
+
+### Fixed
+
+- Fixed updater git-root detection to avoid applying git operations against parent repositories in nested-path scenarios.
+
+### Security
+
+- Mitigated user-enumeration timing side channels in authentication.
+- Mitigated information leakage through raw API exception messages.
+
 ## [3.1.1] - 2026-02-09
 
 ### Changed
