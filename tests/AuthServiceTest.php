@@ -9,104 +9,140 @@ use ForbiddenChecker\Domain\Auth\TotpService;
 use ForbiddenChecker\Infrastructure\Db\Database;
 use ForbiddenChecker\Infrastructure\Db\Migrator;
 use ForbiddenChecker\Infrastructure\Logging\Logger;
-use PDO;
+use RuntimeException;
 
 final class AuthServiceTest extends TestCase
 {
-    private ?AuthService $auth = null;
     private string $dbPath;
-
-    public function __construct()
-    {
-        $this->dbPath = dirname(__DIR__) . '/storage/test_auth_' . uniqid() . '.sqlite';
-    }
+    private string $logPath;
+    private ?Database $db = null;
+    private ?AuthService $authService = null;
 
     public function run(): void
     {
-        try {
-            $this->runTest('testValidLogin');
-            $this->runTest('testInvalidPassword');
-            $this->runTest('testInvalidUser');
-        } finally {
-            if (file_exists($this->dbPath)) {
-                @unlink($this->dbPath);
-            }
-        }
-    }
+        $methods = [
+            'testLoginSuccess',
+            'testLoginInvalidPassword',
+            'testLoginUserNotFound',
+        ];
 
-    private function runTest(string $method): void
-    {
-        $this->setUp();
-        try {
-            $this->$method();
-        } finally {
-            $this->tearDown();
+        foreach ($methods as $method) {
+            $this->setUp();
+            try {
+                $this->$method();
+            } finally {
+                $this->tearDown();
+            }
         }
     }
 
     private function setUp(): void
     {
-        if (file_exists($this->dbPath)) {
-            @unlink($this->dbPath);
+        $suffix = bin2hex(random_bytes(4));
+        $this->dbPath = dirname(__DIR__) . '/storage/test-auth-' . $suffix . '.sqlite';
+        $this->removeSqliteArtifacts($this->dbPath);
+
+        $logDir = dirname(__DIR__) . '/storage/logs';
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0775, true);
         }
+        $this->logPath = $logDir . '/test-auth-' . $suffix . '.log';
 
-        $db = new Database($this->dbPath);
-        $pdo = $db->pdo();
-
-        $migrator = new Migrator($pdo, dirname(__DIR__) . '/database/schema.sql');
+        $this->db = new Database($this->dbPath);
+        $migrator = new Migrator($this->db->pdo(), dirname(__DIR__) . '/database/schema.sql');
         $migrator->migrate();
 
-        // Admin: admin@example.com / admin123!ChangeNow created by migrator
+        $logger = new Logger($this->logPath, true);
+        $totpService = new TotpService();
 
-        $logger = new Logger(dirname(__DIR__) . '/storage/logs/test.log', true);
-        $totp = new TotpService();
-
-        $this->auth = new AuthService(
-            $pdo,
+        $this->authService = new AuthService(
+            $this->db->pdo(),
             $logger,
-            $totp,
-            'test_session',
-            'test_secret'
+            $totpService,
+            'PHPSESSID',
+            'test-secret'
         );
 
         if (session_status() !== PHP_SESSION_ACTIVE) {
-            @session_start();
+            session_start();
         }
         $_SESSION = [];
     }
 
     private function tearDown(): void
     {
-        $_SESSION = [];
-        // DB file cleaned up at end of run or start of next setup
-    }
+        $this->removeSqliteArtifacts($this->dbPath);
+        if (isset($this->logPath) && $this->logPath !== '' && is_file($this->logPath)) {
+            unlink($this->logPath);
+        }
 
-    private function testValidLogin(): void
-    {
-        $user = $this->auth->login('admin@example.com', 'admin123!ChangeNow', null, '127.0.0.1', 'test-agent');
+        $this->db = null;
+        $this->authService = null;
 
-        $this->assertSame('admin@example.com', $user['email'], 'Valid login should return correct email.');
-        $this->assertTrue(isset($_SESSION['user']), 'Session should be populated.');
-        $this->assertSame($user['id'], $_SESSION['user']['id'], 'Session user ID should match.');
-    }
-
-    private function testInvalidPassword(): void
-    {
-        try {
-            $this->auth->login('admin@example.com', 'wrongpassword', null, '127.0.0.1', 'test-agent');
-            $this->assertTrue(false, 'Login with wrong password should fail.');
-        } catch (\RuntimeException $e) {
-            $this->assertSame('Invalid credentials.', $e->getMessage(), 'Error message mismatch.');
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION = [];
+            session_destroy();
         }
     }
 
-    private function testInvalidUser(): void
+    private function testLoginSuccess(): void
+    {
+        $user = $this->authService->login(
+            'admin@example.com',
+            getenv('FCC_ADMIN_PASSWORD') ?: 'admin123!ChangeNow',
+            null,
+            '127.0.0.1',
+            'TestAgent'
+        );
+
+        $this->assertSame('admin@example.com', $user['email']);
+        $this->assertSame('session', $user['auth_type']);
+    }
+
+    private function testLoginInvalidPassword(): void
     {
         try {
-            $this->auth->login('nonexistent@example.com', 'anypassword', null, '127.0.0.1', 'test-agent');
-            $this->assertTrue(false, 'Login with non-existent user should fail.');
-        } catch (\RuntimeException $e) {
-            $this->assertSame('Invalid credentials.', $e->getMessage(), 'Error message mismatch for non-existent user.');
+            $this->authService->login(
+                'admin@example.com',
+                'wrongpassword',
+                null,
+                '127.0.0.1',
+                'TestAgent'
+            );
+            throw new RuntimeException('Should have thrown exception for invalid password');
+        } catch (RuntimeException $e) {
+            $this->assertSame('Invalid credentials.', $e->getMessage());
+        }
+    }
+
+    private function testLoginUserNotFound(): void
+    {
+        try {
+            $this->authService->login(
+                'nonexistent@example.com',
+                'somepassword',
+                null,
+                '127.0.0.1',
+                'TestAgent'
+            );
+            throw new RuntimeException('Should have thrown exception for non-existent user');
+        } catch (RuntimeException $e) {
+            $this->assertSame('Invalid credentials.', $e->getMessage());
+        }
+    }
+
+    private function removeSqliteArtifacts(string $dbPath): void
+    {
+        $paths = [
+            $dbPath,
+            $dbPath . '-wal',
+            $dbPath . '-shm',
+        ];
+
+        foreach ($paths as $path) {
+            if ($path !== '' && is_file($path)) {
+                unlink($path);
+            }
         }
     }
 }

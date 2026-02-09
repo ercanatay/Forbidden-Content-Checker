@@ -10,8 +10,7 @@ use PDO;
 
 final class AuthService
 {
-    // Dummy hash for timing attack mitigation (Argon2id)
-    private const DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=1$L3VDaEd5TS9KclNCMFFSaQ$FdZ4qShIPu8cb2bHsUGWzGehlF1jYkW9PGeoe3cBMw0';
+    private ?string $dummyVerifyHash = null;
 
     public function __construct(
         private readonly PDO $pdo,
@@ -79,13 +78,10 @@ final class AuthService
         $stmt->execute([':email' => mb_strtolower(trim($email), 'UTF-8')]);
         $user = $stmt->fetch();
 
-        $verified = false;
-        if ($user) {
-            $verified = password_verify($password, (string) $user['password_hash']);
-        } else {
-            // Mitigate timing attack
-            password_verify($password, self::DUMMY_HASH);
-        }
+        $hashToVerify = $user
+            ? (string) $user['password_hash']
+            : $this->resolveDummyVerifyHash();
+        $verified = password_verify($password, $hashToVerify);
 
         if (!$user || !$verified) {
             $this->audit(null, 'auth.login.failed', ['email' => $email, 'ip' => $ip]);
@@ -206,5 +202,45 @@ final class AuthService
             ':ip_address' => $ip,
             ':user_agent' => mb_substr($userAgent, 0, 512),
         ]);
+    }
+
+    private function resolveDummyVerifyHash(): string
+    {
+        if ($this->dummyVerifyHash !== null) {
+            return $this->dummyVerifyHash;
+        }
+
+        try {
+            $stmt = $this->pdo->query("SELECT password_hash FROM users WHERE password_hash IS NOT NULL AND password_hash <> '' LIMIT 1");
+            if ($stmt !== false) {
+                $candidate = $stmt->fetchColumn();
+                if (is_string($candidate) && $candidate !== '' && $this->isSupportedPasswordHash($candidate)) {
+                    $this->dummyVerifyHash = $candidate;
+                    return $this->dummyVerifyHash;
+                }
+            }
+        } catch (\Throwable) {
+            // Fall back to generating a local dummy hash.
+        }
+
+        $seed = 'dummy:' . $this->appSecret;
+        $generated = password_hash($seed, PASSWORD_ARGON2ID);
+        if (!is_string($generated) || !$this->isSupportedPasswordHash($generated)) {
+            $generated = password_hash($seed, PASSWORD_DEFAULT);
+            if (!is_string($generated) || !$this->isSupportedPasswordHash($generated)) {
+                throw new \RuntimeException('Unable to initialize dummy password hash.');
+            }
+        }
+
+        $this->dummyVerifyHash = $generated;
+
+        return $this->dummyVerifyHash;
+    }
+
+    private function isSupportedPasswordHash(string $hash): bool
+    {
+        $info = password_get_info($hash);
+
+        return is_array($info) && ((int) ($info['algo'] ?? 0)) !== 0;
     }
 }
