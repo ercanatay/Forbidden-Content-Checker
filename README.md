@@ -2,7 +2,7 @@
 
 Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-Current release: **v3.0.0** (February 8, 2026)
+Current release: **v3.1.0** (February 9, 2026)
 
 ## Table of Contents
 
@@ -19,11 +19,12 @@ Current release: **v3.0.0** (February 8, 2026)
 11. Internationalization (10 languages)
 12. Reporting and Exports
 13. Monitoring and Operations
-14. Compatibility and Migration
-15. Testing and CI
-16. Troubleshooting
-17. Changelog and Release Policy
-18. License
+14. Automatic Updater
+15. Compatibility and Migration
+16. Testing and CI
+17. Troubleshooting
+18. Changelog and Release Policy
+19. License
 
 ## Overview
 
@@ -86,6 +87,7 @@ locales/
   it-IT.json pt-BR.json nl-NL.json ar-SA.json ru-RU.json
 bin/
   worker.php
+  updater.php
 tests/
   run.php
 ```
@@ -143,6 +145,12 @@ Most important variables:
 - `FCC_ALLOW_PRIVATE_NETWORK`: keep `0` unless fully trusted internal targets
 - `FCC_WEBHOOK_URL`: optional global webhook endpoint
 - `FCC_EMAIL_ENABLED`: set to `1` to enable email digest notifications
+- `FCC_UPDATE_ENABLED`: set to `1` to enable update checking/apply flow
+- `FCC_UPDATE_REPO`: GitHub repository slug (default `ercanatay/Forbidden-Content-Checker`)
+- `FCC_UPDATE_CHECK_INTERVAL_SEC`: periodic check interval (default `21600`, 6 hours)
+- `FCC_UPDATE_REQUIRE_APPROVAL`: require admin approval before apply (default `1`)
+- `FCC_UPDATE_ALLOW_ZIP_FALLBACK`: fallback to release zip when git update fails (default `1`)
+- `FCC_GITHUB_TOKEN`: optional GitHub token to reduce API rate-limit issues
 - `FCC_ADMIN_EMAIL` / `FCC_ADMIN_PASSWORD`: bootstrap admin account
 
 Default bootstrap credentials (change immediately):
@@ -226,6 +234,10 @@ Error:
 - `GET /scan-profiles`, `POST /scan-profiles`
 - `GET /keyword-sets`, `POST /keyword-sets`
 - `GET /healthz`, `GET /readyz`, `GET /metrics`
+- `GET /updates/status`
+- `POST /updates/check`
+- `POST /updates/approve`
+- `POST /updates/revoke-approval`
 
 ### Example: Create Scan
 
@@ -307,6 +319,39 @@ Report endpoint:
 - Reports: `storage/reports/`
 - Database: `storage/checker.sqlite`
 
+## Automatic Updater
+
+Updater mode is designed for VPS/dedicated deployments where shell + write access exists.
+
+- Release channel: stable semantic tags only (`vX.Y.Z`)
+- Check policy: periodic (`FCC_UPDATE_CHECK_INTERVAL_SEC`) or manual API/CLI check
+- Apply policy: admin approval required by default
+- Apply execution: CLI/cron only (no in-request web apply)
+- Safety: DB backup + code snapshot + rollback on failed post-apply validation
+
+Updater API:
+
+- `GET /api/v1/updates/status`
+- `POST /api/v1/updates/check` (optional body: `{"force": true}`)
+- `POST /api/v1/updates/approve` (body: `{"version":"X.Y.Z"}`)
+- `POST /api/v1/updates/revoke-approval` (body: `{"version":"X.Y.Z"}`)
+
+Updater CLI:
+
+```bash
+php bin/updater.php --status
+php bin/updater.php --check
+php bin/updater.php --check --force
+php bin/updater.php --apply-approved
+```
+
+Recommended cron:
+
+```bash
+0 */6 * * * php /Applications/XAMPP/xamppfiles/htdocs/backlink.ercanatay.com/Forbidden-Content-Checker/bin/updater.php --check
+*/5 * * * * php /Applications/XAMPP/xamppfiles/htdocs/backlink.ercanatay.com/Forbidden-Content-Checker/bin/updater.php --apply-approved
+```
+
 ## Compatibility and Migration
 
 Legacy endpoint remains available for one release cycle:
@@ -332,6 +377,9 @@ Checks currently included:
 - severity scoring
 - TOTP validation
 - schema + seed verification
+- semantic version comparator and updater state persistence
+- updater check/approval flow
+- updater apply fallback and rollback flow
 
 GitHub Actions CI pipeline:
 

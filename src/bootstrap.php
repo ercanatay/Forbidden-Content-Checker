@@ -11,6 +11,7 @@ use ForbiddenChecker\Http\Controllers\LocaleController;
 use ForbiddenChecker\Http\Controllers\ReportController;
 use ForbiddenChecker\Http\Controllers\ScanController;
 use ForbiddenChecker\Http\Controllers\UiController;
+use ForbiddenChecker\Http\Controllers\UpdateController;
 use ForbiddenChecker\Http\Request;
 use ForbiddenChecker\Http\Response;
 use ForbiddenChecker\Http\Router;
@@ -71,6 +72,7 @@ function fcc_bootstrap(): array
     $report = new ReportController($app);
     $health = new HealthController($app);
     $configController = new ConfigController($app);
+    $updateController = new UpdateController($app);
 
     $router->add('GET', '/', [$ui, 'app']);
     $router->add('GET', '/index.php', [$ui, 'app']);
@@ -104,6 +106,11 @@ function fcc_bootstrap(): array
     $router->add('GET', '/api/v1/healthz', [$health, 'healthz']);
     $router->add('GET', '/api/v1/readyz', [$health, 'readyz']);
     $router->add('GET', '/api/v1/metrics', [$health, 'metrics']);
+
+    $router->add('GET', '/api/v1/updates/status', [$updateController, 'status']);
+    $router->add('POST', '/api/v1/updates/check', [$updateController, 'check']);
+    $router->add('POST', '/api/v1/updates/approve', [$updateController, 'approve']);
+    $router->add('POST', '/api/v1/updates/revoke-approval', [$updateController, 'revokeApproval']);
 
     return [$app, $router, $request];
 }

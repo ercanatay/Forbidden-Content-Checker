@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file.
 
 This project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+- No unreleased changes yet.
+
+## [3.1.0] - 2026-02-09
+
+### Added
+
+- Automatic updater domain with GitHub stable tag checks (`vX.Y.Z`) and semantic version comparison.
+- Admin update management API endpoints:
+  - `GET /api/v1/updates/status`
+  - `POST /api/v1/updates/check`
+  - `POST /api/v1/updates/approve`
+  - `POST /api/v1/updates/revoke-approval`
+- CLI updater entrypoint (`bin/updater.php`) with:
+  - `--status`
+  - `--check` and `--check --force`
+  - `--apply-approved`
+- Safe apply pipeline with updater lock, DB backup, code snapshot backup, post-apply validation, and rollback.
+- Git-first apply transport with optional zip fallback and rollback telemetry in updater state.
+- New updater UI panel for admin users in web frontend.
+- Updater configuration variables in `.env.example` and runtime config loading.
+- Test coverage for version comparator, updater state storage, updater service checks, and apply fallback/rollback scenarios.
+
 ## [3.0.0] - 2026-02-08
 
 ### Added
@@ -60,7 +84,3 @@ This project follows [Semantic Versioning](https://semver.org/).
 - Added RBAC enforcement across protected API endpoints.
 - Added CSRF validation for session-based state-changing requests.
 - Added audit trail records for sensitive auth/config operations.
-
-## [Unreleased]
-
-- No unreleased changes yet.

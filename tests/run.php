@@ -33,6 +33,10 @@ $tests = [
     ForbiddenChecker\Tests\ResultScorerTest::class,
     ForbiddenChecker\Tests\TotpServiceTest::class,
     ForbiddenChecker\Tests\SchemaTest::class,
+    ForbiddenChecker\Tests\VersionComparatorTest::class,
+    ForbiddenChecker\Tests\UpdateStateRepositoryTest::class,
+    ForbiddenChecker\Tests\UpdateServiceTest::class,
+    ForbiddenChecker\Tests\UpdateApplierTest::class,
 ];
 
 $totalAssertions = 0;

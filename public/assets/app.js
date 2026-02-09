@@ -12,6 +12,8 @@
   const root = document.getElementById("app");
   let currentScan = null;
   let pollTimer = null;
+  let updaterStatus = null;
+  let updaterStatusLoading = false;
 
   const t = (key, fallback) => state.messages[key] || fallback || key;
 
@@ -110,6 +112,87 @@
 
     await Promise.all(runners);
     return output;
+  };
+
+  const hasRole = (role) => {
+    return Boolean(state.user && Array.isArray(state.user.roles) && state.user.roles.includes(role));
+  };
+
+  const isAdminUser = () => hasRole("admin");
+
+  const formatTimestamp = (value) => {
+    if (!value) {
+      return "-";
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return String(value);
+    }
+
+    return date.toLocaleString();
+  };
+
+  const refreshUpdaterStatus = async (silent = true) => {
+    if (!isAdminUser()) {
+      updaterStatus = null;
+      return null;
+    }
+
+    updaterStatusLoading = true;
+    try {
+      const res = await api("GET", "/updates/status");
+      updaterStatus = res?.data?.update || null;
+      return updaterStatus;
+    } catch (error) {
+      if (!silent) {
+        notify(error.message || String(error), "error");
+      }
+      throw error;
+    } finally {
+      updaterStatusLoading = false;
+    }
+  };
+
+  const checkForUpdatesAction = async (force = false) => {
+    try {
+      const res = await api("POST", "/updates/check", { force });
+      updaterStatus = res?.data?.update || updaterStatus;
+      notify(t("update.check_success", "Update check completed."), "success");
+      render();
+    } catch (error) {
+      notify(error.message || String(error), "error");
+    }
+  };
+
+  const approveUpdateAction = async () => {
+    const version = updaterStatus?.latestVersion || "";
+    if (!version) {
+      notify(t("update.no_pending", "No pending update found."), "warning");
+      return;
+    }
+
+    try {
+      const res = await api("POST", "/updates/approve", { version });
+      updaterStatus = res?.data?.update || updaterStatus;
+      notify(t("update.approve_success", "Update approved."), "success");
+      render();
+    } catch (error) {
+      notify(error.message || String(error), "error");
+    }
+  };
+
+  const revokeApprovalAction = async () => {
+    const version = updaterStatus?.approvedVersion || "";
+    try {
+      const payload = version ? { version } : {};
+      const res = await api("POST", "/updates/revoke-approval", payload);
+      updaterStatus = res?.data?.update || updaterStatus;
+      notify(t("update.revoke_success", "Approval revoked."), "success");
+      render();
+    } catch (error) {
+      notify(error.message || String(error), "error");
+    }
   };
 
   const renderResultsTable = (rows) => {
@@ -359,6 +442,11 @@
       });
       state.user = res.data.user;
       state.csrfToken = res.data.csrfToken;
+      updaterStatus = null;
+      updaterStatusLoading = false;
+      if (isAdminUser()) {
+        await refreshUpdaterStatus(true).catch(() => {});
+      }
       notify(t("auth.logged_in", "Logged in."), "success");
       render();
     } catch (error) {
@@ -372,6 +460,8 @@
       state.user = null;
       state.csrfToken = "";
       currentScan = null;
+      updaterStatus = null;
+      updaterStatusLoading = false;
       if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
@@ -527,6 +617,66 @@
     return card;
   };
 
+  const updaterPanel = () => {
+    const card = create("section", "card");
+    card.appendChild(create("h2", "title", t("update.title", "Software Updates")));
+    card.appendChild(create("p", "subtitle", t("update.subtitle", "Check GitHub releases and approve safe updates for CLI apply.")));
+
+    if (updaterStatusLoading && updaterStatus === null) {
+      card.appendChild(create("div", "mono", t("update.loading", "Loading update status...")));
+      return card;
+    }
+
+    const status = updaterStatus || {};
+    const statsGrid = create("div", "stats");
+    const cards = [
+      [t("update.installed", "Installed"), status.installedVersion || "-"],
+      [t("update.latest", "Latest"), status.latestVersion || "-"],
+      [t("update.status", "Status"), status.status || "idle"],
+      [t("update.last_check", "Last Check"), formatTimestamp(status.lastCheckAt)],
+      [t("update.last_apply", "Last Apply"), formatTimestamp(status.lastApplyAt)],
+    ];
+
+    cards.forEach(([label, value]) => {
+      const stat = create("div", "stat");
+      stat.appendChild(create("div", "label", label));
+      stat.appendChild(create("div", "value", String(value)));
+      statsGrid.appendChild(stat);
+    });
+
+    card.appendChild(statsGrid);
+
+    const meta = create("div", "shell");
+    meta.appendChild(create("div", "mono", `${t("update.approved", "Approved")}: ${status.approvedVersion || "-"}`));
+    meta.appendChild(create("div", "mono", `${t("update.transport", "Last Transport")}: ${status.lastTransport || "-"}`));
+    meta.appendChild(create("div", "mono", `${t("update.error", "Last Error")}: ${status.lastError || "-"}`));
+    card.appendChild(meta);
+
+    const controls = create("div", "controls");
+    const checkBtn = create("button", "secondary", t("update.check", "Check for updates"));
+    checkBtn.type = "button";
+    checkBtn.addEventListener("click", () => checkForUpdatesAction(true));
+
+    const approveBtn = create("button", "", t("update.approve", "Approve update"));
+    approveBtn.type = "button";
+    const canApprove = Boolean(status.latestVersion && status.status === "update_available");
+    approveBtn.disabled = !canApprove;
+    approveBtn.addEventListener("click", approveUpdateAction);
+
+    const revokeBtn = create("button", "danger", t("update.revoke", "Revoke approval"));
+    revokeBtn.type = "button";
+    revokeBtn.disabled = !status.approvedVersion;
+    revokeBtn.addEventListener("click", revokeApprovalAction);
+
+    controls.appendChild(checkBtn);
+    controls.appendChild(approveBtn);
+    controls.appendChild(revokeBtn);
+    card.appendChild(controls);
+
+    card.appendChild(create("small", "hint", t("update.apply_hint", "Applying updates runs only via CLI/cron: `php bin/updater.php --apply-approved`.")));
+    return card;
+  };
+
   const appPanel = () => {
     const shell = create("div", "shell");
 
@@ -571,6 +721,10 @@
     top.appendChild(noticeHost);
 
     shell.appendChild(top);
+
+    if (isAdminUser()) {
+      shell.appendChild(updaterPanel());
+    }
 
     const formCard = create("section", "card");
     const form = create("form", "shell");
@@ -710,6 +864,8 @@
     clear(root);
 
     if (!state.user) {
+      updaterStatus = null;
+      updaterStatusLoading = false;
       const wrapper = create("div", "shell");
       const header = create("section", "card");
       header.appendChild(create("h1", "title", t("app.title", "Forbidden Content Checker v3")));
@@ -739,6 +895,18 @@
       return;
     }
 
+    if (isAdminUser() && updaterStatus === null && !updaterStatusLoading) {
+      refreshUpdaterStatus(true)
+        .then(() => render())
+        .catch((error) => {
+          updaterStatus = {
+            status: "failed",
+            lastError: error?.message || String(error),
+          };
+          render();
+        });
+    }
+
     root.appendChild(appPanel());
 
     if (currentScan && currentScan.id) {
@@ -752,8 +920,13 @@
         const res = await api("GET", "/me");
         state.user = res.data.user;
         state.csrfToken = res.data.csrfToken;
+        if (isAdminUser()) {
+          await refreshUpdaterStatus(true).catch(() => {});
+        }
       } catch (_error) {
         state.user = null;
+        updaterStatus = null;
+        updaterStatusLoading = false;
       }
     }
 
