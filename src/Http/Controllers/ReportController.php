@@ -33,7 +33,7 @@ final class ReportController extends ApiController
                 $this->app->translator()->t('error.report_export_failed', $locale),
                 $locale,
                 Utils::traceId(),
-                ['reason' => $e->getMessage()],
+                ['reason' => $this->safeErrorMessage($e, 'report.export')],
                 422
             );
         }

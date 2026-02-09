@@ -102,6 +102,25 @@ abstract class ApiController
         return false;
     }
 
+    /**
+     * Log the full exception internally and return a safe, generic message.
+     * Only exposes the real message when app_debug is enabled.
+     */
+    protected function safeErrorMessage(\Throwable $e, string $context): string
+    {
+        $this->app->logger()->error($context . ': ' . $e->getMessage(), [
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        if ($this->app->config()['app_debug'] ?? false) {
+            return $e->getMessage();
+        }
+
+        return 'An internal error occurred.';
+    }
+
     protected function checkAnonymousRateLimit(Request $request, string $locale): bool
     {
         if ($this->app->enforceRateLimit($request, null)) {
