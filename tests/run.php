@@ -37,6 +37,7 @@ $tests = [
     ForbiddenChecker\Tests\UpdateStateRepositoryTest::class,
     ForbiddenChecker\Tests\UpdateServiceTest::class,
     ForbiddenChecker\Tests\UpdateApplierTest::class,
+    ForbiddenChecker\Tests\AuthServiceTest::class,
 ];
 
 $totalAssertions = 0;
