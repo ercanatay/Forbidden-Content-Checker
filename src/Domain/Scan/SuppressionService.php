@@ -8,6 +8,9 @@ use PDO;
 
 final class SuppressionService
 {
+    /** @var array<int, array<string, mixed>>|null In-memory cache of active suppression rules to avoid repeated DB queries during a single scan */
+    private ?array $cachedRules = null;
+
     public function __construct(private readonly PDO $pdo)
     {
     }
@@ -17,13 +20,30 @@ final class SuppressionService
      */
     public function activeRules(): array
     {
+        // Return cached rules if available. Cache lifetime is controlled by
+        // callers (ScanService clears it per job) to avoid stale data in long-lived workers.
+        if ($this->cachedRules !== null) {
+            return $this->cachedRules;
+        }
+
         $stmt = $this->pdo->query(
             "SELECT id, name, pattern, scope_domain, created_by
              FROM suppression_rules
              WHERE is_active = 1"
         );
 
-        return $stmt->fetchAll() ?: [];
+        $this->cachedRules = $stmt->fetchAll() ?: [];
+
+        return $this->cachedRules;
+    }
+
+    /**
+     * Clear the in-memory rules cache, forcing a fresh DB query on the next call.
+     * Useful after suppression rules have been modified.
+     */
+    public function clearCache(): void
+    {
+        $this->cachedRules = null;
     }
 
     public function isSuppressed(string $title, string $url, string $domain): bool
