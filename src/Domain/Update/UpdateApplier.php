@@ -258,15 +258,6 @@ final class UpdateApplier
             ];
         }
 
-        $topLevelRes = $this->commandRunner->run(['git', 'rev-parse', '--show-toplevel'], $this->projectRoot, 20);
-        if ($topLevelRes['exitCode'] !== 0 || !$this->isGitRepositoryRoot(trim($topLevelRes['stdout']))) {
-            return [
-                'isRepository' => false,
-                'head' => null,
-                'branch' => null,
-            ];
-        }
-
         $headRes = $this->commandRunner->run(['git', 'rev-parse', 'HEAD'], $this->projectRoot, 20);
         if ($headRes['exitCode'] !== 0) {
             throw new \RuntimeException('Unable to resolve current git HEAD before update.');
@@ -280,36 +271,6 @@ final class UpdateApplier
             'head' => trim($headRes['stdout']),
             'branch' => $branch !== '' ? $branch : null,
         ];
-    }
-
-    private function isGitRepositoryRoot(string $topLevelPath): bool
-    {
-        if ($topLevelPath === '') {
-            return false;
-        }
-
-        $resolvedProjectRoot = realpath($this->projectRoot);
-        $resolvedTopLevel = realpath($topLevelPath);
-        if ($resolvedProjectRoot === false || $resolvedTopLevel === false) {
-            return false;
-        }
-
-        $normalizedProjectRoot = $this->normalizePath($resolvedProjectRoot);
-        $normalizedTopLevel = $this->normalizePath($resolvedTopLevel);
-
-        if (DIRECTORY_SEPARATOR === '\\') {
-            return strtolower($normalizedProjectRoot) === strtolower($normalizedTopLevel);
-        }
-
-        return $normalizedProjectRoot === $normalizedTopLevel;
-    }
-
-    private function normalizePath(string $path): string
-    {
-        $normalized = str_replace('\\\\', '/', $path);
-        $trimmed = rtrim($normalized, '/');
-
-        return $trimmed === '' ? '/' : $trimmed;
     }
 
     private function applyViaGit(string $targetTag): void
