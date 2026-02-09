@@ -10,6 +10,9 @@ use PDO;
 
 final class AuthService
 {
+    // Dummy hash for timing attack mitigation (Argon2id)
+    private const DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=1$L3VDaEd5TS9KclNCMFFSaQ$FdZ4qShIPu8cb2bHsUGWzGehlF1jYkW9PGeoe3cBMw0';
+
     public function __construct(
         private readonly PDO $pdo,
         private readonly Logger $logger,
@@ -76,7 +79,15 @@ final class AuthService
         $stmt->execute([':email' => mb_strtolower(trim($email), 'UTF-8')]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, (string) $user['password_hash'])) {
+        $verified = false;
+        if ($user) {
+            $verified = password_verify($password, (string) $user['password_hash']);
+        } else {
+            // Mitigate timing attack
+            password_verify($password, self::DUMMY_HASH);
+        }
+
+        if (!$user || !$verified) {
             $this->audit(null, 'auth.login.failed', ['email' => $email, 'ip' => $ip]);
             throw new \RuntimeException('Invalid credentials.');
         }
