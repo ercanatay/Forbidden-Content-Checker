@@ -2,7 +2,7 @@
 
 Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-Current release: **v3.1.0** (February 9, 2026)
+Current release: **v3.1.1** (February 9, 2026)
 
 ## Table of Contents
 

@@ -8,6 +8,22 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.1.1] - 2026-02-09
+
+### Changed
+
+- Completed updater UI translations (`update.*` keys) across all non-English locales:
+  - tr-TR
+  - es-ES
+  - fr-FR
+  - de-DE
+  - it-IT
+  - pt-BR
+  - nl-NL
+  - ru-RU
+  - ar-SA
+- Removed English fallback text from updater labels/messages in localized language packs.
+
 ## [3.1.0] - 2026-02-09
 
 ### Added
