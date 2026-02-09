@@ -12,6 +12,9 @@ use PDO;
 
 final class ScanService
 {
+    /** @var array{allow: array<int, string>, deny: array<int, string>}|null Cached domain policies to avoid per-target DB queries */
+    private ?array $domainPoliciesCache = null;
+
     public function __construct(
         private readonly PDO $pdo,
         private readonly Scanner $scanner,
@@ -144,6 +147,10 @@ final class ScanService
             'worker_id' => $workerId,
             'started_at' => gmdate('Y-m-d H:i:s'),
         ]);
+
+        // Worker processes are long-lived; reset per-job caches to avoid stale policy/rule data.
+        $this->domainPoliciesCache = null;
+        $this->scanner->clearRuntimeCaches();
 
         $keywords = is_array($job['keywords']) ? $job['keywords'] : [];
         $options = is_array($job['options']) ? $job['options'] : [];
@@ -483,27 +490,56 @@ final class ScanService
         return array_values($unique);
     }
 
+    /**
+     * Loads and caches domain policies (allow/deny lists) from the database.
+     * Policies are stable during a scan run, so a single query replaces O(T)
+     * queries where T = number of targets.
+     *
+     * @return array{allow: array<int, string>, deny: array<int, string>}
+     */
+    private function loadDomainPolicies(): array
+    {
+        if ($this->domainPoliciesCache !== null) {
+            return $this->domainPoliciesCache;
+        }
+
+        $stmt = $this->pdo->query("SELECT list_type, domain FROM domain_policies");
+        $rows = $stmt->fetchAll() ?: [];
+
+        $allow = [];
+        $deny = [];
+        foreach ($rows as $row) {
+            $d = strtolower((string) ($row['domain'] ?? ''));
+            if ((string) ($row['list_type'] ?? '') === 'allow') {
+                $allow[] = $d;
+            } else {
+                $deny[] = $d;
+            }
+        }
+
+        $this->domainPoliciesCache = ['allow' => $allow, 'deny' => $deny];
+
+        return $this->domainPoliciesCache;
+    }
+
     private function isDomainAllowed(string $domain): bool
     {
         if ($domain === '') {
             return false;
         }
 
-        $allowStmt = $this->pdo->query("SELECT domain FROM domain_policies WHERE list_type = 'allow'");
-        $allowRows = $allowStmt->fetchAll() ?: [];
+        $policies = $this->loadDomainPolicies();
+        $lowerDomain = strtolower($domain);
 
-        if (count($allowRows) > 0) {
-            $allowDomains = array_map(static fn (array $row): string => strtolower((string) ($row['domain'] ?? '')), $allowRows);
-            if (!in_array(strtolower($domain), $allowDomains, true)) {
+        // If an allowlist exists, the domain must be on it
+        if (count($policies['allow']) > 0) {
+            if (!in_array($lowerDomain, $policies['allow'], true)) {
                 return false;
             }
         }
 
-        $denyStmt = $this->pdo->prepare("SELECT COUNT(1) FROM domain_policies WHERE list_type = 'deny' AND lower(domain) = lower(:domain)");
-        $denyStmt->execute([':domain' => $domain]);
-        $isDenied = (int) $denyStmt->fetchColumn() > 0;
-
-        return !$isDenied;
+        // Domain must not be on the denylist
+        return !in_array($lowerDomain, $policies['deny'], true);
     }
 
     private function isCircuitOpen(string $domain): bool
