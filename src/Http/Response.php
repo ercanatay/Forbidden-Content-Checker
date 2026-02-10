@@ -49,8 +49,9 @@ final class Response
             return;
         }
 
+        $safeName = str_replace(['"', "\r", "\n", "\0"], '', $downloadName);
         header('Content-Type: ' . $contentType);
-        header('Content-Disposition: attachment; filename="' . $downloadName . '"');
+        header('Content-Disposition: attachment; filename="' . $safeName . '"');
         header('Content-Length: ' . (string) filesize($path));
         readfile($path);
     }

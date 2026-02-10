@@ -306,7 +306,7 @@ final class UpdateApplier
 
     private function normalizePath(string $path): string
     {
-        $normalized = str_replace('\\\\', '/', $path);
+        $normalized = str_replace('\\', '/', $path);
         $trimmed = rtrim($normalized, '/');
 
         return $trimmed === '' ? '/' : $trimmed;

@@ -16,7 +16,8 @@ final class RateLimiter
     {
         $now = time();
 
-        $this->pdo->exec('DELETE FROM rate_limits WHERE reset_at <= ' . $now);
+        $cleanup = $this->pdo->prepare('DELETE FROM rate_limits WHERE reset_at <= :now');
+        $cleanup->execute([':now' => $now]);
 
         $stmt = $this->pdo->prepare('SELECT hits, reset_at FROM rate_limits WHERE bucket = :bucket LIMIT 1');
         $stmt->execute([':bucket' => $bucket]);
