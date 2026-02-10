@@ -8,6 +8,18 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.1.3] - 2026-02-10
+
+### Changed
+
+- Enhanced frontend `notify()` rendering with icon-backed, accessible notices and inline close controls.
+- Added keyboard-visible focus behavior for notification close button interaction parity with hover states.
+
+### Fixed
+
+- Set notification close button `type="button"` to prevent accidental form submission when rendered inside forms.
+- Corrected palette journal entry date for chronological consistency with 2026 entries.
+
 ## [3.1.2] - 2026-02-09
 
 ### Changed
