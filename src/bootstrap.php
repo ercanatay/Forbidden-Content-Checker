@@ -120,7 +120,13 @@ function fcc_bootstrap(): array
  */
 function fcc_legacy_scan_response(?array $legacyInput = null): void
 {
-    [$app] = fcc_bootstrap();
+    [$app, , $request] = fcc_bootstrap();
+
+    $user = $app->auth()->currentUser($request);
+    if (!$user) {
+        Response::json(['error' => 'Unauthorized legacy request'], 401);
+        return;
+    }
 
     $input = $legacyInput;
     if ($input === null) {
@@ -148,7 +154,7 @@ function fcc_legacy_scan_response(?array $legacyInput = null): void
     }
     $keywords = array_values(array_unique($keywords));
 
-    $legacyUserId = (int) ($app->pdo()->query('SELECT id FROM users ORDER BY id ASC LIMIT 1')->fetchColumn() ?: 1);
+    $legacyUserId = (int) $user['id'];
 
     $scan = $app->scan()->createScanJob($legacyUserId, [
         'targets' => [$domain],
