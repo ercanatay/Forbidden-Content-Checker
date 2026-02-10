@@ -37,7 +37,7 @@ final class UiController extends ApiController
 </head>
 <body>
   <div id="app"></div>
-  <script>window.__FCC_STATE__ = ' . json_encode($initialState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ';</script>
+  <script>window.__FCC_STATE__ = ' . json_encode($initialState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) . ';</script>
   <script src="/assets/app.js" defer></script>
 </body>
 </html>';

@@ -43,7 +43,7 @@ final class UpdateController extends ApiController
         } catch (\Throwable $e) {
             Response::envelopeError(
                 'update_check_failed',
-                $e->getMessage(),
+                $this->safeErrorMessage($e, 'update.check'),
                 $locale,
                 Utils::traceId(),
                 [],
@@ -84,7 +84,7 @@ final class UpdateController extends ApiController
         } catch (\Throwable $e) {
             Response::envelopeError(
                 'update_approval_failed',
-                $e->getMessage(),
+                $this->safeErrorMessage($e, 'update.approve'),
                 $locale,
                 Utils::traceId(),
                 [],
@@ -115,7 +115,7 @@ final class UpdateController extends ApiController
         } catch (\Throwable $e) {
             Response::envelopeError(
                 'update_revoke_failed',
-                $e->getMessage(),
+                $this->safeErrorMessage($e, 'update.revokeApproval'),
                 $locale,
                 Utils::traceId(),
                 [],

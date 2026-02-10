@@ -45,6 +45,8 @@ final class MetricsService
         $output[] = '# HELP fcc_scan_jobs_total Total scan jobs.';
         $output[] = '# TYPE fcc_scan_jobs_total counter';
         $output[] = 'fcc_scan_jobs_total ' . $totalJobs;
+        $output[] = '# HELP fcc_scan_jobs_status Scan jobs by status.';
+        $output[] = '# TYPE fcc_scan_jobs_status gauge';
         $output[] = 'fcc_scan_jobs_status{status="completed"} ' . $completed;
         $output[] = 'fcc_scan_jobs_status{status="partial"} ' . $partial;
         $output[] = 'fcc_scan_jobs_status{status="failed"} ' . $failed;

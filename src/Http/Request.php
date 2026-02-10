@@ -34,7 +34,7 @@ final class Request
         $uri = (string) ($this->server['REQUEST_URI'] ?? '/');
         $path = parse_url($uri, PHP_URL_PATH);
 
-        return $path !== false ? $path : '/';
+        return is_string($path) ? $path : '/';
     }
 
     public function header(string $name): ?string

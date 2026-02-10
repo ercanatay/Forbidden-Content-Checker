@@ -201,39 +201,44 @@ final class ConfigController extends ApiController
 
         $this->app->pdo()->beginTransaction();
 
-        $setStmt = $this->app->pdo()->prepare(
-            "INSERT INTO keyword_sets (name, description, created_by, created_at)
-             VALUES (:name, :description, :created_by, datetime('now'))"
-        );
-        $setStmt->execute([
-            ':name' => $name,
-            ':description' => $description,
-            ':created_by' => (int) $user['id'],
-        ]);
-
-        $setId = (int) $this->app->pdo()->lastInsertId();
-        $termStmt = $this->app->pdo()->prepare(
-            "INSERT INTO keyword_terms (keyword_set_id, keyword, group_type, created_at)
-             VALUES (:keyword_set_id, :keyword, :group_type, datetime('now'))"
-        );
-
-        foreach ($terms as $term) {
-            if (!is_array($term)) {
-                continue;
-            }
-            $keyword = trim((string) ($term['keyword'] ?? ''));
-            $groupType = strtolower(trim((string) ($term['groupType'] ?? 'include')));
-            if ($keyword === '' || !in_array($groupType, ['include', 'exclude'], true)) {
-                continue;
-            }
-            $termStmt->execute([
-                ':keyword_set_id' => $setId,
-                ':keyword' => $keyword,
-                ':group_type' => $groupType,
+        try {
+            $setStmt = $this->app->pdo()->prepare(
+                "INSERT INTO keyword_sets (name, description, created_by, created_at)
+                 VALUES (:name, :description, :created_by, datetime('now'))"
+            );
+            $setStmt->execute([
+                ':name' => $name,
+                ':description' => $description,
+                ':created_by' => (int) $user['id'],
             ]);
-        }
 
-        $this->app->pdo()->commit();
+            $setId = (int) $this->app->pdo()->lastInsertId();
+            $termStmt = $this->app->pdo()->prepare(
+                "INSERT INTO keyword_terms (keyword_set_id, keyword, group_type, created_at)
+                 VALUES (:keyword_set_id, :keyword, :group_type, datetime('now'))"
+            );
+
+            foreach ($terms as $term) {
+                if (!is_array($term)) {
+                    continue;
+                }
+                $keyword = trim((string) ($term['keyword'] ?? ''));
+                $groupType = strtolower(trim((string) ($term['groupType'] ?? 'include')));
+                if ($keyword === '' || !in_array($groupType, ['include', 'exclude'], true)) {
+                    continue;
+                }
+                $termStmt->execute([
+                    ':keyword_set_id' => $setId,
+                    ':keyword' => $keyword,
+                    ':group_type' => $groupType,
+                ]);
+            }
+
+            $this->app->pdo()->commit();
+        } catch (\Throwable $e) {
+            $this->app->pdo()->rollBack();
+            throw $e;
+        }
 
         Response::envelopeSuccess(['id' => $setId], [], 201);
     }
