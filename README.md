@@ -2,13 +2,11 @@
 
 Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-Current release: **v3.1.4** (February 10, 2026)
+Current release: **v3.1.5** (February 10, 2026)
 
 Latest patch highlights:
-- Inline UI bootstrap state now escapes HTML tags to prevent `</script>` injection vectors.
-- Download filename handling strips unsafe control characters before setting `Content-Disposition`.
-- Update endpoints now return safe generic error messages in non-debug mode.
-- Rate-limit cleanup and metrics exposition are hardened for safer SQL execution and Prometheus compliance.
+- Added authentication enforcement for deprecated legacy endpoint requests (`/forbidden_checker.php`).
+- Legacy compatibility scans now run under the authenticated user context instead of a default admin fallback.
 
 ## Table of Contents
 

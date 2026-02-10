@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.1.5] - 2026-02-10
+
+### Security
+
+- Added authentication enforcement to the deprecated legacy endpoint (`/forbidden_checker.php`) and now return `401` for unauthenticated requests.
+- Legacy compatibility scans are now attributed to the authenticated user instead of defaulting to the first database user.
+
 ## [3.1.4] - 2026-02-10
 
 ### Changed
