@@ -8,6 +8,26 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.1.4] - 2026-02-10
+
+### Changed
+
+- Added `JSON_HEX_TAG` escaping to inline UI bootstrap state rendering.
+- Added missing Prometheus `# HELP`/`# TYPE` annotations for `fcc_scan_jobs_status`.
+- Replaced rate-limit cleanup string concatenation with parameterized SQL execution.
+
+### Fixed
+
+- Corrected updater path normalization to replace single backslashes.
+- Ensured keyword-set creation transaction rolls back on insert failures.
+- Fixed strict-type handling in `Request::uriPath()` when `parse_url()` returns non-string values.
+- Fixed minimal PDF stream delimiters to emit actual newline characters.
+
+### Security
+
+- Sanitized download filenames before setting `Content-Disposition` headers.
+- Replaced raw exception messages with safe API error output in update endpoints.
+
 ## [3.1.3] - 2026-02-10
 
 ### Changed
