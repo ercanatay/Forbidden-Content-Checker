@@ -789,6 +789,11 @@
       shell.appendChild(updaterPanel());
     }
 
+    // New feature panels
+    shell.appendChild(dashboardPanel());
+    shell.appendChild(tagsPanel());
+    shell.appendChild(schedulesPanel());
+
     const formCard = create("section", "card");
     const form = create("form", "shell");
 
@@ -801,6 +806,58 @@
     targets.rows = 7;
     targets.placeholder = "example.com\nhttps://news.example.org";
     targetsBlock.appendChild(targets);
+    // Sitemap discovery and bulk import buttons
+    const targetTools = create("div", "controls");
+    targetTools.style.marginTop = "6px";
+
+    const sitemapBtn = create("button", "secondary", t("sitemap.discover", "Discover from Sitemap"));
+    sitemapBtn.type = "button";
+    sitemapBtn.addEventListener("click", async () => {
+      const firstTarget = targets.value.split(/\r?\n/)[0]?.trim();
+      if (!firstTarget) {
+        notify(t("sitemap.enter_domain", "Enter a domain first."), "warning");
+        return;
+      }
+      try {
+        sitemapBtn.disabled = true;
+        const res = await api("POST", "/sitemap/discover", { domain: firstTarget });
+        const urls = res.data.urls || [];
+        if (urls.length === 0) {
+          notify(t("sitemap.no_urls", "No URLs found in sitemap."), "info");
+          return;
+        }
+        targets.value = urls.join("\n");
+        notify(t("sitemap.found", "Found") + ` ${urls.length} URLs`, "success");
+      } catch (error) {
+        notify(error.message || String(error), "error");
+      } finally {
+        sitemapBtn.disabled = false;
+      }
+    });
+
+    const bulkImportBtn = create("button", "secondary", t("bulk.import", "Bulk Import"));
+    bulkImportBtn.type = "button";
+    bulkImportBtn.addEventListener("click", async () => {
+      const content = prompt(t("bulk.paste_prompt", "Paste URLs (one per line or CSV):"));
+      if (!content) return;
+      try {
+        const res = await api("POST", "/bulk-import", { content, format: "auto" });
+        const urls = res.data.urls || [];
+        if (urls.length === 0) {
+          notify(t("bulk.no_urls", "No valid URLs found."), "warning");
+          return;
+        }
+        targets.value = urls.join("\n");
+        notify(t("bulk.imported", "Imported") + ` ${urls.length} URLs (${res.data.skipped || 0} skipped)`, "success");
+      } catch (error) {
+        notify(error.message || String(error), "error");
+      }
+    });
+
+    targetTools.appendChild(sitemapBtn);
+    targetTools.appendChild(bulkImportBtn);
+    targetsBlock.appendChild(targetTools);
+
     targetsBlock.appendChild(create("small", "hint", t("scan.targets_hint", "Domains or URLs. SSRF-safe validation is enforced.")));
 
     const keywordsBlock = create("div", "shell");
@@ -921,6 +978,233 @@
     shell.appendChild(tableCard);
 
     return shell;
+  };
+
+  // ── Dashboard Panel ──────────────────────────────────────────
+  const dashboardPanel = () => {
+    const card = create("section", "card");
+    card.appendChild(create("h2", "title", t("dashboard.title", "Dashboard")));
+
+    const host = create("div");
+    host.id = "dashboardHost";
+    host.textContent = t("dashboard.loading", "Loading dashboard...");
+    card.appendChild(host);
+
+    (async () => {
+      try {
+        const res = await api("GET", "/dashboard");
+        clear(host);
+
+        const overview = res.data.overview || {};
+        const statsGrid = create("div", "stats");
+        [
+          [t("dashboard.total_scans", "Total Scans"), String(overview.total_scans || 0)],
+          [t("dashboard.total_targets", "Total Targets"), String(overview.total_targets || 0)],
+          [t("dashboard.total_matches", "Total Matches"), String(overview.total_matches || 0)],
+          [t("dashboard.active_schedules", "Active Schedules"), String(overview.active_schedules || 0)],
+          [t("dashboard.total_tags", "Tags"), String(overview.total_tags || 0)],
+        ].forEach(([label, value]) => {
+          const stat = create("div", "stat");
+          stat.appendChild(create("div", "label", label));
+          stat.appendChild(create("div", "value", value));
+          statsGrid.appendChild(stat);
+        });
+        host.appendChild(statsGrid);
+
+        const topKw = res.data.top_keywords || [];
+        if (topKw.length > 0) {
+          host.appendChild(create("h3", "title", t("dashboard.top_keywords", "Top Keywords")));
+          const kwList = create("div", "shell");
+          topKw.forEach((kw) => {
+            kwList.appendChild(create("div", "mono", `${kw.keyword}: ${kw.match_count} ${t("dashboard.matches", "matches")}`));
+          });
+          host.appendChild(kwList);
+        }
+      } catch (error) {
+        host.textContent = error.message || String(error);
+      }
+    })();
+
+    return card;
+  };
+
+  // ── Tags Panel ──────────────────────────────────────────────
+  const tagsPanel = () => {
+    const card = create("section", "card");
+    card.appendChild(create("h2", "title", t("tags.title", "Tags")));
+    card.appendChild(create("p", "subtitle", t("tags.subtitle", "Organize your scans with color-coded tags.")));
+
+    const host = create("div");
+    host.id = "tagsHost";
+    card.appendChild(host);
+
+    const controls = create("div", "controls");
+    controls.style.marginTop = "10px";
+
+    const nameInput = create("input");
+    nameInput.placeholder = t("tags.name_placeholder", "Tag name");
+    nameInput.style.maxWidth = "200px";
+
+    const colorInput = create("input");
+    colorInput.type = "color";
+    colorInput.value = "#6b7280";
+    colorInput.style.width = "40px";
+    colorInput.style.height = "32px";
+    colorInput.style.padding = "2px";
+
+    const addBtn = create("button", "secondary", t("tags.add", "Add Tag"));
+    addBtn.type = "button";
+    addBtn.addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      if (!name) return;
+      try {
+        await api("POST", "/tags", { name, color: colorInput.value });
+        nameInput.value = "";
+        notify(t("tags.created", "Tag created."), "success");
+        refreshTags();
+      } catch (error) {
+        notify(error.message || String(error), "error");
+      }
+    });
+
+    controls.appendChild(nameInput);
+    controls.appendChild(colorInput);
+    controls.appendChild(addBtn);
+    card.appendChild(controls);
+
+    const refreshTags = async () => {
+      try {
+        const res = await api("GET", "/tags");
+        const tags = res.data.items || [];
+        clear(host);
+        if (tags.length === 0) {
+          host.appendChild(create("div", "mono", t("tags.empty", "No tags yet.")));
+          return;
+        }
+        tags.forEach((tag) => {
+          const row = create("div", "controls");
+          row.style.marginBottom = "4px";
+          const badge = create("span", "badge", tag.name);
+          badge.style.backgroundColor = tag.color || "#6b7280";
+          badge.style.color = "#fff";
+          badge.style.padding = "2px 8px";
+          badge.style.borderRadius = "4px";
+          const count = create("span", "mono", `(${tag.scan_count || 0} scans)`);
+          row.appendChild(badge);
+          row.appendChild(count);
+          host.appendChild(row);
+        });
+      } catch (error) {
+        host.textContent = error.message || String(error);
+      }
+    };
+    refreshTags();
+
+    return card;
+  };
+
+  // ── Scheduled Scans Panel ───────────────────────────────────
+  const schedulesPanel = () => {
+    const card = create("section", "card");
+    card.appendChild(create("h2", "title", t("schedules.title", "Scheduled Scans")));
+    card.appendChild(create("p", "subtitle", t("schedules.subtitle", "Set up recurring scans on a schedule.")));
+
+    const host = create("div");
+    host.id = "schedulesHost";
+    card.appendChild(host);
+
+    const form = create("div", "shell");
+    form.style.marginTop = "10px";
+
+    const nameInput = create("input");
+    nameInput.placeholder = t("schedules.name_placeholder", "Schedule name");
+
+    const cronSelect = create("select");
+    [
+      ["daily", t("schedules.daily", "Daily")],
+      ["weekly", t("schedules.weekly", "Weekly")],
+      ["monthly", t("schedules.monthly", "Monthly")],
+      ["hourly", t("schedules.hourly", "Hourly")],
+    ].forEach(([value, label]) => {
+      const opt = create("option", "", label);
+      opt.value = value;
+      cronSelect.appendChild(opt);
+    });
+
+    const schedTargets = create("textarea");
+    schedTargets.rows = 3;
+    schedTargets.placeholder = t("schedules.targets_placeholder", "Targets (one per line)");
+
+    const schedKeywords = create("input");
+    schedKeywords.placeholder = t("schedules.keywords_placeholder", "Keywords (comma-separated)");
+    schedKeywords.value = "casino";
+
+    const addBtn = create("button", "", t("schedules.create", "Create Schedule"));
+    addBtn.type = "button";
+    addBtn.addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      const targets = schedTargets.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const keywords = sanitizeKeywordList(schedKeywords.value || "casino");
+      const cron = cronSelect.value;
+      if (!name || !targets.length) {
+        notify(t("schedules.fill_required", "Fill in name and targets."), "warning");
+        return;
+      }
+      try {
+        await api("POST", "/schedules", { name, targets, keywords, cron });
+        nameInput.value = "";
+        schedTargets.value = "";
+        notify(t("schedules.created", "Schedule created."), "success");
+        refreshSchedules();
+      } catch (error) {
+        notify(error.message || String(error), "error");
+      }
+    });
+
+    form.appendChild(nameInput);
+    form.appendChild(cronSelect);
+    form.appendChild(schedTargets);
+    form.appendChild(schedKeywords);
+    form.appendChild(addBtn);
+    card.appendChild(form);
+
+    const refreshSchedules = async () => {
+      try {
+        const res = await api("GET", "/schedules");
+        const items = res.data.items || [];
+        clear(host);
+        if (items.length === 0) {
+          host.appendChild(create("div", "mono", t("schedules.empty", "No scheduled scans.")));
+          return;
+        }
+        items.forEach((s) => {
+          const row = create("div", "controls");
+          row.style.marginBottom = "6px";
+          const active = Number(s.is_active) === 1;
+          const badge = create("span", `badge ${active ? "completed" : "cancelled"}`, active ? "ACTIVE" : "PAUSED");
+          const info = create("span", "mono", `${s.name} | ${s.schedule_cron} | ${t("schedules.next", "Next")}: ${s.next_run_at || "-"}`);
+          const toggleBtn = create("button", "secondary", active ? t("schedules.pause", "Pause") : t("schedules.resume", "Resume"));
+          toggleBtn.type = "button";
+          toggleBtn.addEventListener("click", async () => {
+            try {
+              await api("POST", `/schedules/${s.id}/toggle`, { active: !active });
+              refreshSchedules();
+            } catch (error) {
+              notify(error.message || String(error), "error");
+            }
+          });
+          row.appendChild(badge);
+          row.appendChild(info);
+          row.appendChild(toggleBtn);
+          host.appendChild(row);
+        });
+      } catch (error) {
+        host.textContent = error.message || String(error);
+      }
+    };
+    refreshSchedules();
+
+    return card;
   };
 
   const render = () => {
