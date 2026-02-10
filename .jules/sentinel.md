@@ -14,3 +14,8 @@
 **Vulnerability:** User enumeration via timing attack in `AuthService::login`. The system returned early when a user was not found, skipping the computationally expensive `password_verify` (Argon2id) call.
 **Learning:** Returning generic error messages is insufficient if the time taken to generate the error varies significantly. Attackers can measure the response time to determine if an email exists in the database.
 **Prevention:** Ensure constant-time execution for authentication logic. Perform a dummy password verification against a representative hash when the user is not found, so the response time is indistinguishable from a failed password attempt for a valid user.
+
+## 2026-05-25 - Unauthenticated Legacy Endpoint Bypass
+**Vulnerability:** Unauthenticated Legacy Endpoint (Public Function)
+**Learning:** Legacy endpoints like `fcc_legacy_scan_response` in `src/bootstrap.php` often bypass standard routing and middleware security checks. This specific function allowed unauthenticated users to trigger scan jobs on behalf of the administrator (first user in DB) by spoofing an AJAX header.
+**Prevention:** Audit all entry points, especially standalone PHP files or helper functions in bootstrap, to ensure they enforce authentication before performing sensitive actions. Use centralized routing with middleware whenever possible.
