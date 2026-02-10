@@ -66,13 +66,76 @@
   };
 
   const notify = (message, type = "success") => {
-    const box = create("div", `notice ${type}`, message);
     const host = document.getElementById("noticeHost");
     if (!host) {
       return;
     }
+
+    const role = ["error", "warning"].includes(type) ? "alert" : "status";
+    const icons = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
+    const icon = icons[type] || icons.info;
+
+    const box = create("div", `notice ${type}`);
+    box.setAttribute("role", role);
+    // Inline styles for layout
+    box.style.display = "flex";
+    box.style.alignItems = "center";
+    box.style.justifyContent = "space-between";
+    box.style.gap = "10px";
+
+    const content = create("div", "", undefined);
+    content.style.display = "flex";
+    content.style.alignItems = "center";
+    content.style.gap = "8px";
+
+    const iconSpan = create("span", "", icon);
+    iconSpan.setAttribute("aria-hidden", "true");
+    content.appendChild(iconSpan);
+
+    const textSpan = create("span", "", message);
+    content.appendChild(textSpan);
+    box.appendChild(content);
+
+    const closeBtn = create("button", "", "×");
+    closeBtn.type = "button";
+    closeBtn.setAttribute("aria-label", t("action.close", "Close"));
+
+    // Inline styles for close button
+    closeBtn.style.background = "transparent";
+    closeBtn.style.border = "none";
+    closeBtn.style.color = "inherit";
+    closeBtn.style.fontSize = "1.5em";
+    closeBtn.style.lineHeight = "1";
+    closeBtn.style.padding = "0";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.style.opacity = "0.6";
+
+    const handleCloseBtnActivate = () => {
+      if (box.parentNode === host) {
+        host.removeChild(box);
+      }
+    };
+    const handleCloseBtnHighlightOn = () => { closeBtn.style.opacity = "1"; };
+    const handleCloseBtnHighlightOff = () => { closeBtn.style.opacity = "0.6"; };
+
+    closeBtn.addEventListener("mouseover", handleCloseBtnHighlightOn);
+    closeBtn.addEventListener("mouseout", handleCloseBtnHighlightOff);
+    closeBtn.addEventListener("focus", handleCloseBtnHighlightOn);
+    closeBtn.addEventListener("blur", handleCloseBtnHighlightOff);
+    closeBtn.addEventListener("click", handleCloseBtnActivate);
+    box.appendChild(closeBtn);
+
     clear(host);
     host.appendChild(box);
+
+    // Auto-dismiss success messages
+    if (type === "success") {
+      setTimeout(() => {
+        if (box.parentNode === host) {
+          host.removeChild(box);
+        }
+      }, 5000);
+    }
   };
 
   const statusBadge = (status) => {
