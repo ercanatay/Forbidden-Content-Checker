@@ -97,6 +97,7 @@
     box.appendChild(content);
 
     const closeBtn = create("button", "", "×");
+    closeBtn.type = "button";
     closeBtn.setAttribute("aria-label", t("action.close", "Close"));
 
     // Inline styles for close button
@@ -109,13 +110,19 @@
     closeBtn.style.cursor = "pointer";
     closeBtn.style.opacity = "0.6";
 
-    closeBtn.onmouseover = () => { closeBtn.style.opacity = "1"; };
-    closeBtn.onmouseout = () => { closeBtn.style.opacity = "0.6"; };
-    closeBtn.onclick = () => {
+    const handleCloseBtnActivate = () => {
       if (box.parentNode === host) {
         host.removeChild(box);
       }
     };
+    const handleCloseBtnHighlightOn = () => { closeBtn.style.opacity = "1"; };
+    const handleCloseBtnHighlightOff = () => { closeBtn.style.opacity = "0.6"; };
+
+    closeBtn.addEventListener("mouseover", handleCloseBtnHighlightOn);
+    closeBtn.addEventListener("mouseout", handleCloseBtnHighlightOff);
+    closeBtn.addEventListener("focus", handleCloseBtnHighlightOn);
+    closeBtn.addEventListener("blur", handleCloseBtnHighlightOff);
+    closeBtn.addEventListener("click", handleCloseBtnActivate);
     box.appendChild(closeBtn);
 
     clear(host);
