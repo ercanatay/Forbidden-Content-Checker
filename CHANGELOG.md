@@ -8,6 +8,37 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.2.0] - 2026-02-10
+
+### Added
+
+- Sitemap.xml auto-discovery: automatically discover target URLs from a site's sitemap.
+  - New API endpoint: `POST /api/v1/sitemap/discover`
+  - Supports sitemap index files and recursive traversal (up to depth 2).
+  - SSRF-safe URL fetching with DNS pinning.
+- Scheduled recurring scans: set up automatic scans on daily, weekly, monthly, or hourly intervals.
+  - New API endpoints: `GET /api/v1/schedules`, `POST /api/v1/schedules`, `POST /api/v1/schedules/{id}/toggle`, `DELETE /api/v1/schedules/{id}`
+  - New CLI scheduler entrypoint: `php bin/scheduler.php`
+  - Crontab-compatible execution for due scheduled scans.
+- Tag/label system for organizing scan jobs with color-coded tags.
+  - New API endpoints: `GET /api/v1/tags`, `POST /api/v1/tags`, `DELETE /api/v1/tags/{id}`
+  - Attach/detach tags on scan jobs: `POST /api/v1/scans/{id}/tags`, `GET /api/v1/scans/{id}/tags`
+- Bulk URL import from CSV or line-separated text.
+  - New API endpoint: `POST /api/v1/bulk-import`
+  - Automatic format detection, deduplication, and validation (up to 1000 URLs).
+- Dashboard summary endpoint with aggregated statistics.
+  - New API endpoint: `GET /api/v1/dashboard`
+  - Overview metrics: total scans, targets, matches, active schedules, tags.
+  - Top keywords, status breakdown, and 30-day daily activity.
+- Frontend UI panels for all new features:
+  - Dashboard panel with live statistics.
+  - Tags management panel with color picker.
+  - Scheduled scans panel with create/pause/resume controls.
+  - "Discover from Sitemap" and "Bulk Import" buttons on scan form.
+- Full i18n translations for all new features across all 10 locales.
+- Database schema additions: `tags`, `scan_job_tags`, `scheduled_scans` tables.
+- Test coverage for TagService, BulkImportService, ScheduleService, and DashboardService.
+
 ## [3.1.5] - 2026-02-10
 
 ### Security

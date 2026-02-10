@@ -25,7 +25,8 @@ final class SchemaTest extends TestCase
             'scan_profiles', 'scan_jobs', 'scan_targets', 'scan_results', 'scan_matches',
             'keyword_sets', 'keyword_terms', 'suppression_rules',
             'notifications', 'webhooks', 'email_subscriptions',
-            'audit_logs', 'system_settings', 'migration_versions', 'rate_limits'
+            'audit_logs', 'system_settings', 'migration_versions', 'rate_limits',
+            'tags', 'scan_job_tags', 'scheduled_scans'
         ];
 
         foreach ($tables as $table) {

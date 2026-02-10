@@ -221,3 +221,46 @@ CREATE INDEX IF NOT EXISTS idx_scan_matches_keyword ON scan_matches(keyword);
 CREATE INDEX IF NOT EXISTS idx_notifications_scan_job_id ON notifications(scan_job_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_event ON audit_logs(event);
 CREATE INDEX IF NOT EXISTS idx_domain_policies_domain ON domain_policies(domain);
+
+-- Tags for organizing scans
+CREATE TABLE IF NOT EXISTS tags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    color TEXT NOT NULL DEFAULT '#6b7280',
+    created_by INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS scan_job_tags (
+    scan_job_id INTEGER NOT NULL,
+    tag_id INTEGER NOT NULL,
+    PRIMARY KEY (scan_job_id, tag_id),
+    FOREIGN KEY (scan_job_id) REFERENCES scan_jobs(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_scan_job_tags_tag_id ON scan_job_tags(tag_id);
+
+-- Scheduled recurring scans
+CREATE TABLE IF NOT EXISTS scheduled_scans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    targets_json TEXT NOT NULL,
+    keywords_json TEXT NOT NULL,
+    exclude_keywords_json TEXT NOT NULL DEFAULT '[]',
+    options_json TEXT NOT NULL DEFAULT '{}',
+    schedule_cron TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    last_run_at TEXT NULL,
+    next_run_at TEXT NULL,
+    last_scan_job_id INTEGER NULL,
+    created_by INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT,
+    FOREIGN KEY (last_scan_job_id) REFERENCES scan_jobs(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_scheduled_scans_next_run ON scheduled_scans(next_run_at);
+CREATE INDEX IF NOT EXISTS idx_scheduled_scans_active ON scheduled_scans(is_active);

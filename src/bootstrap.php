@@ -12,6 +12,7 @@ use ForbiddenChecker\Http\Controllers\ReportController;
 use ForbiddenChecker\Http\Controllers\ScanController;
 use ForbiddenChecker\Http\Controllers\UiController;
 use ForbiddenChecker\Http\Controllers\UpdateController;
+use ForbiddenChecker\Http\Controllers\FeatureController;
 use ForbiddenChecker\Http\Request;
 use ForbiddenChecker\Http\Response;
 use ForbiddenChecker\Http\Router;
@@ -73,6 +74,7 @@ function fcc_bootstrap(): array
     $health = new HealthController($app);
     $configController = new ConfigController($app);
     $updateController = new UpdateController($app);
+    $featureController = new FeatureController($app);
 
     $router->add('GET', '/', [$ui, 'app']);
     $router->add('GET', '/index.php', [$ui, 'app']);
@@ -111,6 +113,28 @@ function fcc_bootstrap(): array
     $router->add('POST', '/api/v1/updates/check', [$updateController, 'check']);
     $router->add('POST', '/api/v1/updates/approve', [$updateController, 'approve']);
     $router->add('POST', '/api/v1/updates/revoke-approval', [$updateController, 'revokeApproval']);
+
+    // Sitemap discovery
+    $router->add('POST', '/api/v1/sitemap/discover', [$featureController, 'discoverSitemap']);
+
+    // Bulk URL import
+    $router->add('POST', '/api/v1/bulk-import', [$featureController, 'bulkImport']);
+
+    // Tags
+    $router->add('GET', '/api/v1/tags', [$featureController, 'listTags']);
+    $router->add('POST', '/api/v1/tags', [$featureController, 'createTag']);
+    $router->add('DELETE', '/api/v1/tags/{id}', [$featureController, 'deleteTag']);
+    $router->add('POST', '/api/v1/scans/{id}/tags', [$featureController, 'attachTags']);
+    $router->add('GET', '/api/v1/scans/{id}/tags', [$featureController, 'scanJobTags']);
+
+    // Scheduled scans
+    $router->add('GET', '/api/v1/schedules', [$featureController, 'listSchedules']);
+    $router->add('POST', '/api/v1/schedules', [$featureController, 'createSchedule']);
+    $router->add('POST', '/api/v1/schedules/{id}/toggle', [$featureController, 'toggleSchedule']);
+    $router->add('DELETE', '/api/v1/schedules/{id}', [$featureController, 'deleteSchedule']);
+
+    // Dashboard
+    $router->add('GET', '/api/v1/dashboard', [$featureController, 'dashboard']);
 
     return [$app, $router, $request];
 }

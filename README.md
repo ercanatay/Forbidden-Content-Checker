@@ -2,16 +2,19 @@
 
 Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-Current release: **v3.1.5** (February 10, 2026)
+Current release: **v3.2.0** (February 10, 2026)
 
-Latest patch highlights:
-- Added authentication enforcement for deprecated legacy endpoint requests (`/forbidden_checker.php`).
-- Legacy compatibility scans now run under the authenticated user context instead of a default admin fallback.
+Latest release highlights:
+- Sitemap.xml auto-discovery for automatic target URL detection.
+- Scheduled/recurring scans (daily, weekly, monthly, hourly).
+- Tag system for organizing and filtering scans.
+- Bulk URL import from CSV/TXT files.
+- Dashboard with aggregated statistics and top keywords.
 
 ## Table of Contents
 
 1. Overview
-2. What Is New in v3
+2. What Is New in v3.2
 3. Core Capabilities
 4. Architecture
 5. Requirements
@@ -20,15 +23,17 @@ Latest patch highlights:
 8. Security Model
 9. API Reference
 10. Queue and Worker
-11. Internationalization (10 languages)
-12. Reporting and Exports
-13. Monitoring and Operations
-14. Automatic Updater
-15. Compatibility and Migration
-16. Testing and CI
-17. Troubleshooting
-18. Changelog and Release Policy
-19. License
+11. Scheduled Scans
+12. Internationalization (10 languages)
+13. Tags
+14. Reporting and Exports
+14. Monitoring and Operations
+15. Automatic Updater
+16. Compatibility and Migration
+17. Testing and CI
+18. Troubleshooting
+19. Changelog and Release Policy
+20. License
 
 ## Overview
 
@@ -42,8 +47,13 @@ v3 upgrades the project from a single-file checker to a modular application with
 - Localization in 10 languages (including Turkish and Arabic/RTL)
 - Multi-format reporting (`csv`, `json`, `xlsx`, `pdf`)
 
-## What Is New in v3
+## What Is New in v3.2
 
+- **Sitemap.xml Auto-Discovery**: auto-detect URLs from target site's sitemap
+- **Scheduled Scans**: recurring scans on daily/weekly/monthly/hourly basis
+- **Tag System**: organize and filter scans with color-coded tags
+- **Bulk URL Import**: import from CSV/TXT with deduplication
+- **Dashboard**: aggregated statistics, top keywords, daily activity
 - Modular architecture under `src/`, `public/`, `database/`, `locales/`, `tests/`
 - New API envelope and stable error model
 - Auth hardening (Argon2id, CSRF, secure sessions, API tokens)
@@ -66,6 +76,11 @@ v3 upgrades the project from a single-file checker to a modular application with
 11. Webhook and email notifications
 12. Health/readiness/metrics endpoints
 13. Full i18n support for UI and API messages
+14. Sitemap.xml auto-discovery for target URL detection
+15. Scheduled/recurring scans with cron-like scheduling
+16. Tag/label system for scan organization
+17. Bulk URL import from CSV/TXT files
+18. Dashboard with aggregated statistics
 
 ## Architecture
 
@@ -92,6 +107,7 @@ locales/
 bin/
   worker.php
   updater.php
+  scheduler.php
 tests/
   run.php
 ```
@@ -242,6 +258,12 @@ Error:
 - `POST /updates/check`
 - `POST /updates/approve`
 - `POST /updates/revoke-approval`
+- `POST /sitemap/discover`
+- `POST /bulk-import`
+- `GET /tags`, `POST /tags`, `DELETE /tags/{id}`
+- `POST /scans/{id}/tags`, `GET /scans/{id}/tags`
+- `GET /schedules`, `POST /schedules`, `POST /schedules/{id}/toggle`, `DELETE /schedules/{id}`
+- `GET /dashboard`
 
 ### Example: Create Scan
 
@@ -276,6 +298,58 @@ php bin/worker.php
 ```
 
 Stale running jobs are recovered on worker startup.
+
+## Scheduled Scans
+
+Set up recurring scans that run automatically on a schedule.
+
+### Creating a Schedule
+
+```bash
+curl -X POST http://127.0.0.1:8080/api/v1/schedules \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Weekly Production Scan",
+    "targets": ["example.com", "blog.example.com"],
+    "keywords": ["casino", "betting"],
+    "cron": "weekly"
+  }'
+```
+
+Supported schedule intervals: `hourly`, `daily`, `weekly`, `monthly`, or a 5-part cron expression.
+
+### Running Due Schedules
+
+```bash
+php bin/scheduler.php --once
+```
+
+Recommended crontab entry:
+
+```bash
+* * * * * php /path/to/bin/scheduler.php --once >> /path/to/storage/scheduler.log 2>&1
+```
+
+List all schedules: `php bin/scheduler.php --list`
+
+## Tags
+
+Organize scans with color-coded tags. Tags can be created, attached to scan jobs, and used for filtering.
+
+```bash
+# Create a tag
+curl -X POST http://127.0.0.1:8080/api/v1/tags \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "production", "color": "#ef4444"}'
+
+# Attach tags to a scan
+curl -X POST http://127.0.0.1:8080/api/v1/scans/42/tags \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"tagIds": [1, 2]}'
+```
 
 ## Internationalization (10 Languages)
 
@@ -384,6 +458,10 @@ Checks currently included:
 - semantic version comparator and updater state persistence
 - updater check/approval flow
 - updater apply fallback and rollback flow
+- tag service CRUD operations
+- bulk import URL parsing and deduplication
+- scheduled scan lifecycle
+- dashboard statistics aggregation
 
 GitHub Actions CI pipeline:
 

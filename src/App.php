@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace ForbiddenChecker;
 
+use ForbiddenChecker\Domain\Analytics\DashboardService;
 use ForbiddenChecker\Domain\Analytics\TrendService;
 use ForbiddenChecker\Domain\Auth\AuthService;
 use ForbiddenChecker\Domain\Auth\TotpService;
 use ForbiddenChecker\Domain\I18n\Translator;
+use ForbiddenChecker\Domain\Scan\BulkImportService;
 use ForbiddenChecker\Domain\Scan\ResultScorer;
 use ForbiddenChecker\Domain\Scan\ScanService;
 use ForbiddenChecker\Domain\Scan\Scanner;
+use ForbiddenChecker\Domain\Scan\ScheduleService;
+use ForbiddenChecker\Domain\Scan\SitemapDiscovery;
 use ForbiddenChecker\Domain\Scan\SuppressionService;
+use ForbiddenChecker\Domain\Scan\TagService;
 use ForbiddenChecker\Domain\Scan\UrlNormalizer;
 use ForbiddenChecker\Domain\Update\UpdateApplier;
 use ForbiddenChecker\Domain\Update\UpdateService;
@@ -46,6 +51,11 @@ final class App
     private ReportExporter $reportExporter;
     private UpdateService $updateService;
     private UpdateApplier $updateApplier;
+    private TagService $tagService;
+    private ScheduleService $scheduleService;
+    private SitemapDiscovery $sitemapDiscovery;
+    private BulkImportService $bulkImportService;
+    private DashboardService $dashboardService;
 
     /**
      * @param array<string, mixed> $config
@@ -74,13 +84,14 @@ final class App
         );
 
         $urlNormalizer = new UrlNormalizer();
+        $ssrfGuard = new SsrfGuard((bool) $config['allow_private_network']);
         $scanService = new ScanService(
             $this->db->pdo(),
             new Scanner(
                 $urlNormalizer,
                 new ResultScorer(),
                 new SuppressionService($this->db->pdo()),
-                new SsrfGuard((bool) $config['allow_private_network']),
+                $ssrfGuard,
                 $this->logger,
                 (int) $config['request_timeout'],
                 (int) $config['max_retries'],
@@ -100,6 +111,12 @@ final class App
             $this->logger
         );
         $this->scanService = $scanService;
+
+        $this->tagService = new TagService($this->db->pdo());
+        $this->scheduleService = new ScheduleService($this->db->pdo(), $this->scanService, $this->logger);
+        $this->sitemapDiscovery = new SitemapDiscovery($ssrfGuard, $urlNormalizer, $this->logger, (int) $config['request_timeout']);
+        $this->bulkImportService = new BulkImportService($urlNormalizer);
+        $this->dashboardService = new DashboardService($this->db->pdo());
 
         $this->reportExporter = new ReportExporter($this->db->pdo(), (string) $config['report_dir'], (string) $config['app_secret']);
 
@@ -201,6 +218,31 @@ final class App
     public function updateApplier(): UpdateApplier
     {
         return $this->updateApplier;
+    }
+
+    public function tags(): TagService
+    {
+        return $this->tagService;
+    }
+
+    public function schedules(): ScheduleService
+    {
+        return $this->scheduleService;
+    }
+
+    public function sitemapDiscovery(): SitemapDiscovery
+    {
+        return $this->sitemapDiscovery;
+    }
+
+    public function bulkImport(): BulkImportService
+    {
+        return $this->bulkImportService;
+    }
+
+    public function dashboard(): DashboardService
+    {
+        return $this->dashboardService;
     }
 
     /**
