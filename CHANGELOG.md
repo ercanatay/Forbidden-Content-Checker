@@ -8,6 +8,17 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.2.1] - 2026-02-10
+
+### Fixed
+
+- Added password-hash algorithm fallback for environments that do not expose `PASSWORD_ARGON2ID`, preventing runtime failures during migration and authentication timing mitigation paths.
+- Hardened default-admin bootstrap hash creation with explicit validation and clear failure messaging.
+
+### Documentation
+
+- Updated README release notes and corrected configuration path reference to `.env.example`.
+
 ## [3.2.0] - 2026-02-10
 
 ### Added
