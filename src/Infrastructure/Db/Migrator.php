@@ -44,7 +44,11 @@ final class Migrator
             return;
         }
 
-        $passwordHash = password_hash($password, PASSWORD_ARGON2ID);
+        $algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT;
+        $passwordHash = password_hash($password, $algo);
+        if (!is_string($passwordHash) || $passwordHash === '') {
+            throw new \RuntimeException('Unable to generate password hash for default admin user.');
+        }
         $insertUser = $this->pdo->prepare(
             'INSERT INTO users (email, password_hash, display_name, locale, mfa_enabled, mfa_secret, created_at, updated_at)
              VALUES (:email, :password_hash, :display_name, :locale, 0, NULL, datetime(\'now\'), datetime(\'now\'))'

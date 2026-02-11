@@ -224,7 +224,8 @@ final class AuthService
         }
 
         $seed = 'dummy:' . $this->appSecret;
-        $generated = password_hash($seed, PASSWORD_ARGON2ID);
+        $algo = defined('PASSWORD_ARGON2ID') ? PASSWORD_ARGON2ID : PASSWORD_DEFAULT;
+        $generated = password_hash($seed, $algo);
         if (!is_string($generated) || !$this->isSupportedPasswordHash($generated)) {
             $generated = password_hash($seed, PASSWORD_DEFAULT);
             if (!is_string($generated) || !$this->isSupportedPasswordHash($generated)) {

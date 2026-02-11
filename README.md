@@ -2,9 +2,12 @@
 
 Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-Current release: **v3.2.0** (February 10, 2026)
+Current release: **v3.2.1** (February 10, 2026)
 
 Latest release highlights:
+- Runtime compatibility fix for environments without Argon2 support (secure fallback to `PASSWORD_DEFAULT`).
+- Stabilized bootstrap user/password-hash generation for broader PHP builds.
+- README path and release notes cleanup.
 - Sitemap.xml auto-discovery for automatic target URL detection.
 - Scheduled/recurring scans (daily, weekly, monthly, hourly).
 - Tag system for organizing and filtering scans.
@@ -27,13 +30,13 @@ Latest release highlights:
 12. Internationalization (10 languages)
 13. Tags
 14. Reporting and Exports
-14. Monitoring and Operations
-15. Automatic Updater
-16. Compatibility and Migration
-17. Testing and CI
-18. Troubleshooting
-19. Changelog and Release Policy
-20. License
+15. Monitoring and Operations
+16. Automatic Updater
+17. Compatibility and Migration
+18. Testing and CI
+19. Troubleshooting
+20. Changelog and Release Policy
+21. License
 
 ## Overview
 
@@ -154,7 +157,7 @@ Open: `http://127.0.0.1:8080`
 ## Configuration
 
 Primary settings are loaded from environment variables.
-See: `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/.env.example`
+See: `.env.example`
 
 Most important variables:
 
