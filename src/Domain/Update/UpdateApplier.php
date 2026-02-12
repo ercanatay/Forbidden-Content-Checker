@@ -393,7 +393,7 @@ final class UpdateApplier
 
         $headers = [
             'Accept: application/octet-stream',
-            'User-Agent: ForbiddenContentChecker-Updater/1.0',
+            'User-Agent: CybokronForbiddenContentChecker-Updater/1.0',
         ];
         if ($this->githubToken !== null && $this->githubToken !== '') {
             $headers[] = 'Authorization: Bearer ' . $this->githubToken;

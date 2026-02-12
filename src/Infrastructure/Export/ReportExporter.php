@@ -193,7 +193,7 @@ final class ReportExporter
         $signature = hash_hmac('sha256', json_encode($summary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $this->appSecret);
 
         $lines = [
-            'Forbidden Content Checker v3 - Signed Report',
+            'Cybokron Forbidden Content Checker v3 - Signed Report',
             'Scan Job ID: ' . $scanJobId,
             'Status: ' . ($summary['status'] ?? 'unknown'),
             'Targets: ' . (string) $summary['targets'],

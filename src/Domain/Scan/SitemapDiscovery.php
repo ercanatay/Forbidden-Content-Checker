@@ -133,7 +133,7 @@ final class SitemapDiscovery
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => min(8, $this->timeout),
-            CURLOPT_USERAGENT => 'ForbiddenContentChecker/3.2 SitemapDiscovery',
+            CURLOPT_USERAGENT => 'CybokronForbiddenContentChecker/3.2 SitemapDiscovery',
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
             CURLOPT_RESOLVE => [sprintf('%s:%d:%s', $resolved['host'], $resolved['port'], $resolved['ip'])],

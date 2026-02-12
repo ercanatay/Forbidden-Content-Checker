@@ -28,7 +28,7 @@ final class Config
         }
 
         return [
-            'app_name' => getenv('FCC_APP_NAME') ?: 'Forbidden Content Checker v3',
+            'app_name' => getenv('FCC_APP_NAME') ?: 'Cybokron Forbidden Content Checker v3',
             'app_env' => getenv('FCC_APP_ENV') ?: 'production',
             'app_debug' => filter_var(getenv('FCC_APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOL),
             'app_secret' => getenv('FCC_APP_SECRET') ?: 'change-me-in-production',
@@ -52,7 +52,7 @@ final class Config
             'worker_stale_after_sec' => (int) (getenv('FCC_WORKER_STALE_AFTER_SEC') ?: 120),
             'compat_legacy_enabled' => filter_var(getenv('FCC_COMPAT_LEGACY_ENABLED') ?: '1', FILTER_VALIDATE_BOOL),
             'update_enabled' => filter_var(getenv('FCC_UPDATE_ENABLED') ?: '1', FILTER_VALIDATE_BOOL),
-            'update_repo' => getenv('FCC_UPDATE_REPO') ?: 'ercanatay/Forbidden-Content-Checker',
+            'update_repo' => getenv('FCC_UPDATE_REPO') ?: 'ercanatay/cybokron-forbidden-content-checker',
             'update_remote' => getenv('FCC_UPDATE_REMOTE') ?: 'origin',
             'update_branch' => getenv('FCC_UPDATE_BRANCH') ?: 'main',
             'update_check_interval_sec' => (int) (getenv('FCC_UPDATE_CHECK_INTERVAL_SEC') ?: 21600),

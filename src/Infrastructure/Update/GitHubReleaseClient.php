@@ -48,7 +48,7 @@ final class GitHubReleaseClient implements ReleaseClientInterface
 
         $headers = [
             'Accept: application/vnd.github+json',
-            'User-Agent: ForbiddenContentChecker-Updater/1.0',
+            'User-Agent: CybokronForbiddenContentChecker-Updater/1.0',
         ];
 
         if ($this->githubToken !== null && $this->githubToken !== '') {

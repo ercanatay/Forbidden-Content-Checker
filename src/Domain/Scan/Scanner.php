@@ -534,7 +534,7 @@ final class Scanner
             CURLOPT_FOLLOWLOCATION => false, // SECURITY: Disable auto-follow to prevent SSRF bypass
             CURLOPT_TIMEOUT => $this->timeout,
             CURLOPT_CONNECTTIMEOUT => min(8, $this->timeout),
-            CURLOPT_USERAGENT => 'ForbiddenContentChecker/3.0',
+            CURLOPT_USERAGENT => 'CybokronForbiddenContentChecker/3.0',
             CURLOPT_FAILONERROR => false,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,

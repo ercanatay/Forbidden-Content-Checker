@@ -15,7 +15,7 @@ $force = in_array('--force', $argvList, true);
 $applyApproved = in_array('--apply-approved', $argvList, true);
 
 if (!$showStatus && !$runCheck && !$applyApproved) {
-    fwrite(STDOUT, "Forbidden Content Checker Updater\n\n");
+    fwrite(STDOUT, "Cybokron Forbidden Content Checker Updater\n\n");
     fwrite(STDOUT, "Usage:\n");
     fwrite(STDOUT, "  php bin/updater.php --status\n");
     fwrite(STDOUT, "  php bin/updater.php --check [--force]\n");

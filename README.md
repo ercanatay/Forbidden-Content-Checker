@@ -1,12 +1,13 @@
-# Forbidden Content Checker
+# Cybokron Forbidden Content Checker
 
-Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
+Cybokron Forbidden Content Checker is a secure, multilingual, WordPress-first scanning platform for detecting forbidden keywords across websites at scale.
 
-Current release: **[v3.2.1](https://github.com/ercanatay/Forbidden-Content-Checker/releases/tag/v3.2.1)** (February 11, 2026)
+Current release: **[v3.2.2](https://github.com/ercanatay/cybokron-forbidden-content-checker/releases/tag/v3.2.2)** (February 12, 2026)
 
-Included PRs in this release:
-- [#13](https://github.com/ercanatay/Forbidden-Content-Checker/pull/13) feat: add sitemap discovery, scheduled scans, tags, bulk import, and dashboard
-- [#14](https://github.com/ercanatay/Forbidden-Content-Checker/pull/14) fix: add Argon2 fallback and prepare v3.2.1 release
+Included changes in this release:
+- Rebranded product, UI titles, updater messaging, and report/email labels to **Cybokron Forbidden Content Checker**.
+- Updated updater defaults and release references to the new GitHub repository slug.
+- Synchronized package/container naming and updater User-Agent identifiers with the new brand.
 
 Latest release highlights:
 - Runtime compatibility fix for environments without Argon2 support (secure fallback to `PASSWORD_DEFAULT`).
@@ -173,7 +174,7 @@ Most important variables:
 - `FCC_WEBHOOK_URL`: optional global webhook endpoint
 - `FCC_EMAIL_ENABLED`: set to `1` to enable email digest notifications
 - `FCC_UPDATE_ENABLED`: set to `1` to enable update checking/apply flow
-- `FCC_UPDATE_REPO`: GitHub repository slug (default `ercanatay/Forbidden-Content-Checker`)
+- `FCC_UPDATE_REPO`: GitHub repository slug (default `ercanatay/cybokron-forbidden-content-checker`)
 - `FCC_UPDATE_CHECK_INTERVAL_SEC`: periodic check interval (default `21600`, 6 hours)
 - `FCC_UPDATE_REQUIRE_APPROVAL`: require admin approval before apply (default `1`)
 - `FCC_UPDATE_ALLOW_ZIP_FALLBACK`: fallback to release zip when git update fails (default `1`)
@@ -433,8 +434,8 @@ php bin/updater.php --apply-approved
 Recommended cron:
 
 ```bash
-0 */6 * * * php /Applications/XAMPP/xamppfiles/htdocs/backlink.ercanatay.com/Forbidden-Content-Checker/bin/updater.php --check
-*/5 * * * * php /Applications/XAMPP/xamppfiles/htdocs/backlink.ercanatay.com/Forbidden-Content-Checker/bin/updater.php --apply-approved
+0 */6 * * * php /Applications/XAMPP/xamppfiles/htdocs/backlink.ercanatay.com/cybokron-forbidden-content-checker/bin/updater.php --check
+*/5 * * * * php /Applications/XAMPP/xamppfiles/htdocs/backlink.ercanatay.com/cybokron-forbidden-content-checker/bin/updater.php --apply-approved
 ```
 
 ## Compatibility and Migration
@@ -501,10 +502,10 @@ GitHub Actions CI pipeline:
 
 ## Changelog and Release Policy
 
-- Changelog file: `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/CHANGELOG.md`
-- Version file: `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/VERSION`
+- Changelog file: `/Users/ercanatay/Documents/GitHub/cybokron-forbidden-content-checker/CHANGELOG.md`
+- Version file: `/Users/ercanatay/Documents/GitHub/cybokron-forbidden-content-checker/VERSION`
 - Versioning model: Semantic Versioning (`MAJOR.MINOR.PATCH`)
 
 ## License
 
-MIT License. See `/Users/ercanatay/Documents/GitHub/Forbidden-Content-Checker/LICENSE`.
+MIT License. See `/Users/ercanatay/Documents/GitHub/cybokron-forbidden-content-checker/LICENSE`.

@@ -1,6 +1,6 @@
 {
-  "name": "ercanatay/forbidden-content-checker",
-  "description": "Forbidden Content Checker v3",
+  "name": "ercanatay/cybokron-forbidden-content-checker",
+  "description": "Cybokron Forbidden Content Checker v3",
   "type": "project",
   "license": "MIT",
   "require": {

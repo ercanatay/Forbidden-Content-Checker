@@ -8,6 +8,13 @@ This project follows [Semantic Versioning](https://semver.org/).
 
 - No unreleased changes yet.
 
+## [3.2.2] - 2026-02-12
+
+### Changed
+
+- Rebranded project and default runtime metadata to **Cybokron Forbidden Content Checker**.
+- Updated updater default repository slug to `ercanatay/cybokron-forbidden-content-checker`.
+
 ## [3.2.1] - 2026-02-10
 
 ### Fixed

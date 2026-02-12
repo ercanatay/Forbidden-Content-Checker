@@ -746,7 +746,7 @@
     const top = create("section", "card");
     const header = create("div", "header");
     const left = create("div");
-    left.appendChild(create("h1", "title", t("app.title", "Forbidden Content Checker v3")));
+    left.appendChild(create("h1", "title", t("app.title", "Cybokron Forbidden Content Checker v3")));
     left.appendChild(create("p", "subtitle", t("app.subtitle", "WordPress-first scanning with multilingual UI, queueing, and secure exports.")));
 
     const right = create("div", "controls");
@@ -1215,7 +1215,7 @@
       updaterStatusLoading = false;
       const wrapper = create("div", "shell");
       const header = create("section", "card");
-      header.appendChild(create("h1", "title", t("app.title", "Forbidden Content Checker v3")));
+      header.appendChild(create("h1", "title", t("app.title", "Cybokron Forbidden Content Checker v3")));
       header.appendChild(create("p", "subtitle", t("auth.required", "Please authenticate to continue.")));
       const localeRow = create("div", "controls");
       const localeSelect = create("select");

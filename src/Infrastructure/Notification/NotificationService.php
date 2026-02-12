@@ -97,7 +97,7 @@ final class NotificationService
             return;
         }
 
-        $subject = 'Forbidden Content Checker - Scan Completed #' . $scanJobId;
+        $subject = 'Cybokron Forbidden Content Checker - Scan Completed #' . $scanJobId;
         $body = "Scan #{$scanJobId} completed.\n\n" . json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         foreach ($subscribers as $row) {

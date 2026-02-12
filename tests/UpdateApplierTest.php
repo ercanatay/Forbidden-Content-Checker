@@ -189,7 +189,7 @@ final class UpdateApplierTest extends TestCase
             $root . '/storage/checker.sqlite',
             true,
             $allowZipFallback,
-            'ercanatay/Forbidden-Content-Checker',
+            'ercanatay/cybokron-forbidden-content-checker',
             $remote,
             $branch,
             null,
@@ -210,7 +210,7 @@ final class UpdateApplierTest extends TestCase
     private function createReleaseZip(string $version, bool $testsPass): string
     {
         $tempRoot = sys_get_temp_dir() . '/fcc-release-src-' . bin2hex(random_bytes(4));
-        $topDirName = 'Forbidden-Content-Checker-v' . $version;
+        $topDirName = 'cybokron-forbidden-content-checker-v' . $version;
         $releaseRoot = $tempRoot . '/' . $topDirName;
         mkdir($releaseRoot . '/public', 0775, true);
         mkdir($releaseRoot . '/src', 0775, true);
